@@ -986,14 +986,21 @@ class Callback(object):
                 self._active = False
 
         if self._engine.timing_logger:
+            callback_name = self._logger.name.replace('plugin.', '')
             end_time = datetime.datetime.now(SG_TIMEZONE.local)
-            duration = end_time - start_time
-            delay = start_time - event['created_at']
+            duration = self._prettyTimeDeltaFormat(end_time - start_time)
+            delay = self._prettyTimeDeltaFormat(start_time - event['created_at'])
             msg_format = "event_id=%d created_at=%s callback=%s start=%s end=%s duration=%s error=%s delay=%s"
-            data = [event['id'], event['created_at'].isoformat(), self._logger.name.replace('plugin.', ''), start_time.isoformat(), end_time.isoformat(), str(duration), str(error), str(delay)]
+            data = [event['id'], event['created_at'].isoformat(), callback_name, start_time.isoformat(), end_time.isoformat(), duration, str(error), delay]
             self._engine.timing_logger.info(msg_format, *data)
 
         return self._active
+
+    def _prettyTimeDeltaFormat(self, time_delta):
+        days, remainder = divmod(time_delta.total_seconds(), 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return "%02d:%02d:%02d:%02d.%06d" % (days, hours, minutes, seconds, time_delta.microseconds)
 
     def isActive(self):
         """
