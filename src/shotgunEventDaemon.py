@@ -53,8 +53,10 @@ if sys.platform == 'win32':
 
 import daemonizer
 import shotgun_api3 as sg
+from shotgun_api3.lib.sgtimezone import SgTimezone
 
 
+SG_TIMEZONE = SgTimezone()
 CURRENT_PYTHON_VERSION = StrictVersion(sys.version.split()[0])
 PYTHON_25 = StrictVersion('2.5')
 PYTHON_26 = StrictVersion('2.6')
@@ -225,6 +227,12 @@ class Config(ConfigParser.ConfigParser):
 
         return path
 
+    def getTimingLogFile(self):
+        if not self.has_option('daemon', 'timing_log') or self.get('daemon', 'timing_log') != 'on':
+            return None
+
+        return self.getLogFile() + '.timing'
+
 
 class Engine(object):
     """
@@ -253,7 +261,7 @@ class Engine(object):
         self._fetch_interval = self.config.getint('daemon', 'fetch_interval')
         self._use_session_uuid = self.config.getboolean('shotgun', 'use_session_uuid')
 
-        # Setup the logger for the main engine
+        # Setup the loggers for the main engine
         if self.config.getLogMode() == 0:
             # Set the root logger for file output.
             rootLogger = logging.getLogger()
@@ -273,9 +281,19 @@ class Engine(object):
 
         self.log.setLevel(self.config.getLogLevel())
 
+        # Setup the timing log file
+        timing_log_filename = self.config.getTimingLogFile()
+        if timing_log_filename:
+            self.timing_logger = logging.getLogger('timing')
+            self.timing_logger.setLevel(self.config.getLogLevel())
+            _setFilePathOnLogger(self.timing_logger, timing_log_filename)
+        else:
+            self.timing_logger = None
+
         super(Engine, self).__init__()
 
     def setEmailsOnLogger(self, logger, emails):
+        return
         # Configure the logger for email output
         _removeHandlersFromLogger(logger, logging.handlers.SMTPHandler)
 
@@ -946,9 +964,15 @@ class Callback(object):
         if self._engine._use_session_uuid:
             self._shotgun.set_session_uuid(event['session_uuid'])
 
+        if self._engine.timing_logger:
+            start_time = datetime.datetime.now(SG_TIMEZONE.local)
+
         try:
             self._callback(self._shotgun, self._logger, event, self._args)
+            error = False
         except:
+            error = True
+
             # Get the local variables of the frame of our plugin
             tb = sys.exc_info()[2]
             stack = []
@@ -960,6 +984,14 @@ class Callback(object):
             self._logger.critical(msg, traceback.format_exc(), pprint.pformat(stack[1].f_locals))
             if self._stopOnError:
                 self._active = False
+
+        if self._engine.timing_logger:
+            end_time = datetime.datetime.now(SG_TIMEZONE.local)
+            duration = end_time - start_time
+            delay = start_time - event['created_at']
+            msg_format = "event_id=%d created_at=%s callback=%s start=%s end=%s duration=%s error=%s delay=%s"
+            data = [event['id'], event['created_at'].isoformat(), self._logger.name.replace('plugin.', ''), start_time.isoformat(), end_time.isoformat(), str(duration), str(error), str(delay)]
+            self._engine.timing_logger.info(msg_format, *data)
 
         return self._active
 
