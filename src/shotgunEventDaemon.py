@@ -293,7 +293,6 @@ class Engine(object):
         super(Engine, self).__init__()
 
     def setEmailsOnLogger(self, logger, emails):
-        return
         # Configure the logger for email output
         _removeHandlersFromLogger(logger, logging.handlers.SMTPHandler)
 
