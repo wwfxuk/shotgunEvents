@@ -1,5 +1,6 @@
-# Shotgun Event Framework
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+# Shotgun Event Framework
 This software was originaly developed by [Patrick
 Boucher](http://www.patrickboucher.com) with support from [Rodeo
 Fx](http://rodeofx.com) and [Oblique](http://obliquefx.com). It is now part of
