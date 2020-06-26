@@ -77,7 +77,7 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
     # Make sure we can read the schema.
     try:
         entity_schema = sg.schema_field_read(entity_type)
-    except Exception, e:
+    except Exception as e:
         logger.warning(
             "Can't read Shotgun schema for entity \"%s\": %s" % (
                 entity_type,

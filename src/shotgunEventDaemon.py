@@ -23,6 +23,7 @@ folder or an html compiled version at:
 http://shotgunsoftware.github.com/shotgunEvents
 """
 
+from __future__ import print_function
 __version__ = '0.9'
 __version_info__ = (0, 9)
 
@@ -267,7 +268,7 @@ class Engine(object):
             rootLogger = logging.getLogger()
             rootLogger.config = self.config
             _setFilePathOnLogger(rootLogger, self.config.getLogFile())
-            print self.config.getLogFile()
+            print(self.config.getLogFile())
 
             # Set the engine logger for email output.
             self.log = logging.getLogger('engine')
@@ -344,7 +345,7 @@ class Engine(object):
             self._mainLoop()
         except KeyboardInterrupt:
             self.log.warning('Keyboard interrupt. Cleaning up...')
-        except Exception, err:
+        except Exception as err:
             msg = 'Crash!!!!! Unexpected error (%s) in main loop.\n\n%s'
             self.log.critical(msg, type(err), traceback.format_exc(err))
 
@@ -417,7 +418,7 @@ class Engine(object):
                         for collection in self._pluginCollections:
                             collection.setState(lastEventId)
                 fh.close()
-            except OSError, err:
+            except OSError as err:
                 raise EventDaemonError('Could not load event id from file.\n\n%s' % traceback.format_exc(err))
         else:
             # No id file?
@@ -437,9 +438,9 @@ class Engine(object):
             order = [{'column':'id', 'direction':'desc'}]
             try:
                 result = self._sg.find_one("EventLogEntry", filters=[], fields=['id'], order=order)
-            except (sg.ProtocolError, sg.ResponseError, socket.error), err:
+            except (sg.ProtocolError, sg.ResponseError, socket.error) as err:
                 conn_attempts = self._checkConnectionAttempts(conn_attempts, str(err))
-            except Exception, err:
+            except Exception as err:
                 msg = "Unknown error: %s" % str(err)
                 conn_attempts = self._checkConnectionAttempts(conn_attempts, msg)
             else:
@@ -520,9 +521,9 @@ class Engine(object):
                     if events:
                         self.log.debug('Got %d events: %d to %d.', len(events), events[0]['id'], events[-1]['id'])
                     return events
-                except (sg.ProtocolError, sg.ResponseError, socket.error), err:
+                except (sg.ProtocolError, sg.ResponseError, socket.error) as err:
                     conn_attempts = self._checkConnectionAttempts(conn_attempts, str(err))
-                except Exception, err:
+                except Exception as err:
                     msg = "Unknown error: %s" % str(err)
                     conn_attempts = self._checkConnectionAttempts(conn_attempts, msg)
 
@@ -547,7 +548,7 @@ class Engine(object):
                         fh = open(eventIdFile, 'w')
                         pickle.dump(self._eventIdData, fh)
                         fh.close()
-                    except OSError, err:
+                    except OSError as err:
                         self.log.error('Can not write event id data to %s.\n\n%s', eventIdFile, traceback.format_exc(err))
                     break
             else:
@@ -1204,9 +1205,9 @@ def main():
             func()
             return 0
 
-        print "Unknown command: %s" % action
+        print("Unknown command: %s" % action)
 
-    print "usage: %s start|stop|restart|foreground" % sys.argv[0]
+    print("usage: %s start|stop|restart|foreground" % sys.argv[0])
     return 2
 
 
