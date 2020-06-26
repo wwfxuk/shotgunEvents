@@ -33,7 +33,7 @@ def registerCallbacks(reg):
         "target_status_field": "sg_status_list",
         "target_fin_status": "fin",
         "target_ip_status": "ip",
-        "target_disable_status": "na"
+        "target_disable_status": "na",
     }
 
     # Grab an sg connection for the validator.
@@ -86,10 +86,12 @@ def update_entity_status(sg, logger, event, args):
     :param args: Any additional misc arguments passed through this plugin.
     """
 
-    if (not event.get("meta", {}).get("entity_id") and
-        not event.get("meta", {}).get("old_value") and
-        not event.get("meta", {}).get("new_value")):
-            return
+    if (
+        not event.get("meta", {}).get("entity_id")
+        and not event.get("meta", {}).get("old_value")
+        and not event.get("meta", {}).get("new_value")
+    ):
+        return
 
     # Make some vars for convenience.
     task_id = event["meta"]["entity_id"]
@@ -106,11 +108,7 @@ def update_entity_status(sg, logger, event, args):
         # current Task, which is probably a good thing, in case its status has
         # been changed.
         tasks = sg.find(
-            "Task",
-            [
-                ["entity", "is", task["entity"]],
-            ],
-            [args["task_status_field"]],
+            "Task", [["entity", "is", task["entity"]],], [args["task_status_field"]],
         )
 
         # Determine if all those Tasks are set to fin_status.
@@ -143,22 +141,27 @@ def update_entity_status(sg, logger, event, args):
                 sg.update(
                     entity["type"],
                     entity["id"],
-                    {args["target_status_field"]: args["target_fin_status"]}
+                    {args["target_status_field"]: args["target_fin_status"]},
                 )
 
                 # Tell the logger all about it.
-                logger.info("Updated %s %s with new %s value %s." % (
-                    entity["type"],
-                    entity["code"],
-                    args["target_status_field"],
-                    args["target_fin_status"],
-                ))
+                logger.info(
+                    "Updated %s %s with new %s value %s."
+                    % (
+                        entity["type"],
+                        entity["code"],
+                        args["target_status_field"],
+                        args["target_fin_status"],
+                    )
+                )
 
     # Else if the Task status has been set to task_ip_status...
     elif new_value == args["task_ip_status"]:
 
         # Re-query the Task to gather additional field values.
-        task = sg.find_one("Task", [["id", "is", task_id]], ["entity", args["task_status_field"]])
+        task = sg.find_one(
+            "Task", [["id", "is", task_id]], ["entity", args["task_status_field"]]
+        )
 
         # Double-check the Task is still set to task_ip_status (could have
         # changed since the event was triggered):
@@ -175,21 +178,25 @@ def update_entity_status(sg, logger, event, args):
             sg.update(
                 entity["type"],
                 entity["id"],
-                {args["target_status_field"]: args["target_ip_status"]}
+                {args["target_status_field"]: args["target_ip_status"]},
             )
 
             # Tell the logger all about it.
-            logger.info("Updated %s %s with new %s value %s." % (
-                entity["type"],
-                entity["code"],
-                args["target_status_field"],
-                args["target_ip_status"],
-            ))
+            logger.info(
+                "Updated %s %s with new %s value %s."
+                % (
+                    entity["type"],
+                    entity["code"],
+                    args["target_status_field"],
+                    args["target_ip_status"],
+                )
+            )
 
     # Else if the status has been set from task_fin/na_status to something
     # besides task_fin/na_status...
-    elif (old_value == args["task_fin_status"] or old_value == args["task_na_status"]) \
-    and (new_value != args["task_na_status"] or new_value != args["task_fin_status"]):
+    elif (
+        old_value == args["task_fin_status"] or old_value == args["task_na_status"]
+    ) and (new_value != args["task_na_status"] or new_value != args["task_fin_status"]):
 
         # Re-query the Task to gather additional field values.
         task = sg.find_one("Task", [["id", "is", task_id]], ["entity"])
@@ -208,13 +215,16 @@ def update_entity_status(sg, logger, event, args):
             sg.update(
                 entity["type"],
                 entity["id"],
-                {args["target_status_field"]: args["target_ip_status"]}
+                {args["target_status_field"]: args["target_ip_status"]},
             )
 
             # Tell the logger all about it.
-            logger.info("Updated %s %s with new %s value %s." % (
-                entity["type"],
-                entity["code"],
-                args["target_status_field"],
-                args["target_ip_status"],
-            ))
+            logger.info(
+                "Updated %s %s with new %s value %s."
+                % (
+                    entity["type"],
+                    entity["code"],
+                    args["target_status_field"],
+                    args["target_ip_status"],
+                )
+            )

@@ -11,7 +11,7 @@ the Shotgun Python API, for example:
 "initial_data": {
     "sg_vendor_groups": [
       {
-        "type": "Group", 
+        "type": "Group",
         "id": 1
       }
     ]
@@ -33,4 +33,3 @@ Shotgun unless `force` is `true`.
 | filters      | list    | Standard SG API list of lists used to limit query results.                   |
 | initial_data | dict    | Key-value pairs (field_name: initial value) to use to initialise the entity. |
 | force        | boolean | When true, will overwrite existing data (e.g. if the user provided it).      |
-

@@ -134,20 +134,15 @@ def is_valid(sg, logger, args):
         value_type = type(args[name])
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "%s arg's value is type %s but should be type %s, please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                "%s arg's value is type %s but should be type %s, please fix."
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the arg has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "%s arg's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                "%s arg's value is empty but requires a value, please fix." % (name,)
             )
             return
 
@@ -156,20 +151,19 @@ def is_valid(sg, logger, args):
         entity_schema = sg.schema_field_read("Sequence")
     except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" args's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" args\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
     # Make sure seqeunce_code_field is in the entity type's schema.
     if args["sequence_code_field"] not in entity_schema:
-        logger.warning("%s not in entity schema, please fix." % args["sequence_code_field"])
+        logger.warning(
+            "%s not in entity schema, please fix." % args["sequence_code_field"]
+        )
         return
 
     return True
-
 
 
 def link_shot_to_sequence(sg, logger, event, args):
@@ -199,29 +193,36 @@ def link_shot_to_sequence(sg, logger, event, args):
 
     # These are cases where we cannot continue.
     if not shot:
-        logger.warning("Unable to find Shot with id #%d in Shotgun. Exiting." % entity_id)
+        logger.warning(
+            "Unable to find Shot with id #%d in Shotgun. Exiting." % entity_id
+        )
         return
     if not shot["code"]:
-        logger.debug("Shot (#%d) 'code' is empty, can't do anything. Exiting." % entity_id)
+        logger.debug(
+            "Shot (#%d) 'code' is empty, can't do anything. Exiting." % entity_id
+        )
         return
     if shot["sg_sequence"]:
-        logger.debug("Shot '%s' (#%d) already has a linked Sequence. Exiting." % (shot["code"],
-                                                                                  shot["id"]))
+        logger.debug(
+            "Shot '%s' (#%d) already has a linked Sequence. Exiting."
+            % (shot["code"], shot["id"])
+        )
         return
 
     # Check if the Shot code is valid.
     m = re.search(args["shot_code_regex"], shot["code"])
     if not m:
-        logger.debug("Shot code: %s (#%d) doesn't match valid naming convention. Exiting." % (
-                     shot["code"], shot["id"]
-        ))
+        logger.debug(
+            "Shot code: %s (#%d) doesn't match valid naming convention. Exiting."
+            % (shot["code"], shot["id"])
+        )
         return
     sequence_code = m.group(args["sequence_code_regex_group"])
 
     # Lookup the Sequence.
     filters = [
         ["project", "is", shot["project"]],
-        [args["sequence_code_field"], "is", sequence_code]
+        [args["sequence_code_field"], "is", sequence_code],
     ]
 
     # Append any additional Sequence filters from args.
@@ -229,14 +230,15 @@ def link_shot_to_sequence(sg, logger, event, args):
 
     sequence = sg.find_one("Sequence", filters, ["code"])
     if not sequence:
-        logger.warning("No Sequence found matching Sequence Code: %s. Using filters: %s. Exiting." % (
-                     sequence_code, filters
-        ))
+        logger.warning(
+            "No Sequence found matching Sequence Code: %s. Using filters: %s. Exiting."
+            % (sequence_code, filters)
+        )
         return
 
     # Update the Shot with the correct Sequence.
     sg.update("Shot", shot["id"], {"sg_sequence": sequence})
-    logger.debug("Updated Shot '%s' (#%d) with Sequence '%s' (#%d)" % (shot["code"],
-                                                                       shot["id"],
-                                                                       sequence["code"],
-                                                                       sequence["id"]))
+    logger.debug(
+        "Updated Shot '%s' (#%d) with Sequence '%s' (#%d)"
+        % (shot["code"], shot["id"], sequence["code"], sequence["id"])
+    )

@@ -20,8 +20,8 @@ def registerCallbacks(reg):
 
     # Prepare the shared state object
     _state = {
-        'sequential': -1,
-        'rotating': -1,
+        "sequential": -1,
+        "rotating": -1,
     }
 
     # Callbacks are called in registration order. So callbackA will be called
@@ -42,7 +42,7 @@ def callbackA(sg, logger, event, args):
     # We know callbackA will be called first because we registered it first.
     # As the first thing to run on each event, we can reinizialize the rotating
     # counter.
-    args['rotating'] = -1
+    args["rotating"] = -1
 
     # Then we pass off to our helper function... because I'm lazy.
     printIds(sg, logger, event, args)
@@ -61,8 +61,8 @@ def callbackC(*args):
 def printIds(sg, logger, event, args):
     # Here we can increment the two counters that are in shared state. Each
     # callback has played with the contents of this shared dictionary.
-    args['sequential'] += 1
-    args['rotating'] += 1
+    args["sequential"] += 1
+    args["rotating"] += 1
 
     # Log the counters so we can actually see something.
-    logger.info('Sequential #%d - Rotating #%d', args['sequential'], args['rotating'])
+    logger.info("Sequential #%d - Rotating #%d", args["sequential"], args["rotating"])

@@ -109,7 +109,8 @@ def tasks_approved(sg, logger, event, args):
     # Return if our Task isn't set to a valid task_status.
     elif task[args["task_status_field"]] not in args["task_status"]:
         logger.debug(
-            "Task with ID %s not set to one of %s, skipping." % (task["id"], args["task_status"])
+            "Task with ID %s not set to one of %s, skipping."
+            % (task["id"], args["task_status"])
         )
         return
 
@@ -120,7 +121,11 @@ def tasks_approved(sg, logger, event, args):
     build_updates_for_downstream_tasks(sg, logger, task, batch_updates, args)
 
     # Find any Notes linked to the current Task and close them.
-    if args.get("close_notes") and args.get("note_status_field") and args.get("closed_note_status"):
+    if (
+        args.get("close_notes")
+        and args.get("note_status_field")
+        and args.get("closed_note_status")
+    ):
         notes = sg.find(
             "Note",
             [["tasks.Task.id", "is", task["id"]]],
@@ -128,20 +133,21 @@ def tasks_approved(sg, logger, event, args):
         )
         for note in notes:
             if all_note_tasks_approved(sg, note, args):
-                batch_updates.append({
-                    "request_type": "update",
-                    "entity_type": "Note",
-                    "entity_id": note["id"],
-                    "data": {args["note_status_field"]: args["closed_note_status"]},
-                })
+                batch_updates.append(
+                    {
+                        "request_type": "update",
+                        "entity_type": "Note",
+                        "entity_id": note["id"],
+                        "data": {args["note_status_field"]: args["closed_note_status"]},
+                    }
+                )
 
     # If we have something to do, do it!
     if batch_updates:
         sg.batch(batch_updates)
         logger.info(
-            "All Notes attached to Task with ID %s will be set to \"%s\"." % (
-                task["id"], args["closed_note_status"]
-            )
+            'All Notes attached to Task with ID %s will be set to "%s".'
+            % (task["id"], args["closed_note_status"])
         )
     else:
         logger.info("Task with ID %s: nothing to do, skipping." % task["id"])
@@ -166,9 +172,7 @@ def build_updates_for_downstream_tasks(sg, logger, task, batch_updates, args):
     # tasks values.
     downstream_tasks = sg.find(
         "Task",
-        [
-            ["id", "in", [t["id"] for t in task[args["downstream_tasks_field"]]]]
-        ],
+        [["id", "in", [t["id"] for t in task[args["downstream_tasks_field"]]]]],
         [
             args["task_status_field"],
             args["upstream_tasks_field"],
@@ -185,32 +189,41 @@ def build_updates_for_downstream_tasks(sg, logger, task, batch_updates, args):
         if len(downstream_task[args["upstream_tasks_field"]]) > 1:
             for upstream_task in downstream_task[args["upstream_tasks_field"]]:
                 upstream_task = sg.find_one(
-                    "Task",
-                    [["id", "is", upstream_task["id"]]],
-                    ["sg_status_list"],
+                    "Task", [["id", "is", upstream_task["id"]]], ["sg_status_list"],
                 )
-                if upstream_task["sg_status_list"] not in args["task_status"] \
-                and upstream_task["sg_status_list"] not in args["downstream_task_status_recurse"]:
+                if (
+                    upstream_task["sg_status_list"] not in args["task_status"]
+                    and upstream_task["sg_status_list"]
+                    not in args["downstream_task_status_recurse"]
+                ):
                     upstream_check = False
                     break
         if not upstream_check:
             continue
 
-        if downstream_task.get(args["task_status_field"]) in \
-        args["downstream_task_status_activate"]:
+        if (
+            downstream_task.get(args["task_status_field"])
+            in args["downstream_task_status_activate"]
+        ):
 
-            batch_updates.append({
-                "request_type": "update",
-                "entity_type": "Task",
-                "entity_id": downstream_task["id"],
-                "data": {
-                    args["task_status_field"]: args["downstream_task_status_active"]
-                },
-            })
-        elif args.get("downstream_task_status_recurse") \
-        and downstream_task.get(args["task_status_field"]) in \
-        args["downstream_task_status_recurse"]:
-            build_updates_for_downstream_tasks(sg, logger, downstream_task, batch_updates, args)
+            batch_updates.append(
+                {
+                    "request_type": "update",
+                    "entity_type": "Task",
+                    "entity_id": downstream_task["id"],
+                    "data": {
+                        args["task_status_field"]: args["downstream_task_status_active"]
+                    },
+                }
+            )
+        elif (
+            args.get("downstream_task_status_recurse")
+            and downstream_task.get(args["task_status_field"])
+            in args["downstream_task_status_recurse"]
+        ):
+            build_updates_for_downstream_tasks(
+                sg, logger, downstream_task, batch_updates, args
+            )
 
 
 def all_note_tasks_approved(sg, note, args):

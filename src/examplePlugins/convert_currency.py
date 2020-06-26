@@ -44,7 +44,8 @@ def registerCallbacks(reg):
 
     # Build our event filter.
     event_filter = {
-        "Shotgun_%s_Change" % args["entity_type"]: [
+        "Shotgun_%s_Change"
+        % args["entity_type"]: [
             args["from_currency_field"],
             args["exchange_rate_field"],
             args["status_field"],
@@ -54,11 +55,7 @@ def registerCallbacks(reg):
     # Register our callback with the Shotgun_%s_Change event and tell the logger
     # about it.
     reg.registerCallback(
-        script_name,
-        script_key,
-        convert_currency,
-        event_filter,
-        args,
+        script_name, script_key, convert_currency, event_filter, args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -87,10 +84,8 @@ def is_valid(sg, logger, args):
         entity_schema = sg.schema_field_read(args["entity_type"])
     except Exception as e:
         raise ValueError(
-            "Can't read Shotgun schema for \"entity_type\" setting's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" setting\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
 
     for name, type_target in args_to_check.iteritems():
@@ -101,11 +96,8 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if value_type not in type_target["type"]:
             raise ValueError(
-                "\"%s\" setting's value is type \"%s\" but should be of type(s) %s, please fix." % (
-                    name,
-                    value_type,
-                    type_target["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be of type(s) %s, please fix.'
+                % (name, value_type, type_target["type"])
             )
 
         # If we've got a sg_type, we assume the setting refers to a Shotgun
@@ -119,21 +111,15 @@ def is_valid(sg, logger, args):
         # Make sure the field exists on the entity.
         if not sg_type:
             raise ValueError(
-                "\"%s\" setting refers to a %s entity field (\"%s\") that doesn't exist, please fix." % (
-                    name,
-                    args["entity_type"],
-                    args[name],
-                )
+                '"%s" setting refers to a %s entity field ("%s") that doesn\'t exist, please fix.'
+                % (name, args["entity_type"], args[name],)
             )
 
         # Make sure the field is the correct Shotgun type.
         if sg_type not in type_target["sg_type"]:
             raise ValueError(
-                "\"%s\" setting refers to a Shotgun field that is type \"%s\" but should be of type(s) %s, please fix." % (
-                    name,
-                    sg_type,
-                    type_target["sg_type"]
-                )
+                '"%s" setting refers to a Shotgun field that is type "%s" but should be of type(s) %s, please fix.'
+                % (name, sg_type, type_target["sg_type"])
             )
 
     return True
@@ -150,9 +136,8 @@ def convert_currency(sg, logger, event, args):
     """
 
     # Return if we don't have all the field values we need.
-    if (not event.get("attribute_name") or
-        not event.get("meta", {}).get("entity_id")):
-            return
+    if not event.get("attribute_name") or not event.get("meta", {}).get("entity_id"):
+        return
 
     # Make some vars for convenience.
     entity_id = event["meta"]["entity_id"]
@@ -175,41 +160,42 @@ def convert_currency(sg, logger, event, args):
 
     # Return if we don't have from-currency or exchange rate values.
     if not cost[args["from_currency_field"]] or not cost[args["exchange_rate_field"]]:
-        logger.debug("Missing %s or %s value, skipping." % (
-            args["from_currency_field"],
-            args["exchange_rate_field"],
-        ))
+        logger.debug(
+            "Missing %s or %s value, skipping."
+            % (args["from_currency_field"], args["exchange_rate_field"],)
+        )
         return
 
     # Return if the status is in the ignore_statuses list.
     if cost[args["status_field"]] in args["ignore_statuses"]:
-        logger.debug("\"%s\" status is in %s, skipping." % (
-            cost[args["status_field"]], args["ignore_statuses"])
+        logger.debug(
+            '"%s" status is in %s, skipping.'
+            % (cost[args["status_field"]], args["ignore_statuses"])
         )
         return
 
     # Return if the plugin was triggered by the status field and the old value
     # is not in the ignore_statuses list. We only need this trigger to execute
     # if it's flushing out blank costs after coming back from an excluded status.
-    if event["attribute_name"] == args["status_field"] \
-    and event["meta"]["old_value"] not in args["ignore_statuses"]:
+    if (
+        event["attribute_name"] == args["status_field"]
+        and event["meta"]["old_value"] not in args["ignore_statuses"]
+    ):
         logger.debug(
-            "Cost status was not previously of type(s) %s, skipping." % args["ignore_statuses"])
+            "Cost status was not previously of type(s) %s, skipping."
+            % args["ignore_statuses"]
+        )
         return
 
     # Do the currency conversion.
-    converted_amount = cost[args["from_currency_field"]] * float(cost[args["exchange_rate_field"]])
+    converted_amount = cost[args["from_currency_field"]] * float(
+        cost[args["exchange_rate_field"]]
+    )
 
     # Update the entity record.
     cost = sg.update(
-        args["entity_type"],
-        cost["id"],
-        {args["to_currency_field"]: converted_amount}
+        args["entity_type"], cost["id"], {args["to_currency_field"]: converted_amount}
     )
 
     # Tell the logger about it.
-    logger.debug("Updated %s with ID %s: %s" % (
-        args["entity_type"],
-        entity_id,
-        cost,
-    ))
+    logger.debug("Updated %s with ID %s: %s" % (args["entity_type"], entity_id, cost,))

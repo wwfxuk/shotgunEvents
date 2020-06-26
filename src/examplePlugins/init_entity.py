@@ -71,10 +71,8 @@ def is_valid(sg, logger, args):
         entity_schema = sg.schema_field_read(args["entity_type"])
     except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" args's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" args\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
@@ -92,11 +90,8 @@ def is_valid(sg, logger, args):
         # Make sure the arg value is the correct Python type.
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" arg's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" arg\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
@@ -106,16 +101,14 @@ def is_valid(sg, logger, args):
             if "bool" in checks.get("type"):
                 if args[name] not in [True, False]:
                     logger.warning(
-                        "\"%s\" arg's value is empty but requires a value, please fix." % (
-                            name,
-                        )
+                        '"%s" arg\'s value is empty but requires a value, please fix.'
+                        % (name,)
                     )
                     return
             elif not args[name]:
                 logger.warning(
-                    "\"%s\" arg's value is empty but requires a value, please fix." % (
-                        name,
-                    )
+                    '"%s" arg\'s value is empty but requires a value, please fix.'
+                    % (name,)
                 )
                 return
 
@@ -143,10 +136,8 @@ def is_valid(sg, logger, args):
                 # entity type.
                 if field_name not in entity_schema.keys():
                     logger.warning(
-                        "%s entity field \"%s\" does not exist in Shotgun, please fix." % (
-                            args["entity_type"],
-                            field_name,
-                        )
+                        '%s entity field "%s" does not exist in Shotgun, please fix.'
+                        % (args["entity_type"], field_name,)
                     )
                     return
 
@@ -163,23 +154,22 @@ def is_valid(sg, logger, args):
                 # make sure the initial value provided will work for this field
                 if field_value_type not in valid_value_types:
                     logger.warning(
-                        "Initial value for Shotgun field \"%s\" is type \"%s\" but should be of type(s) \"%s,\" please fix." % (
-                            field_name,
-                            field_value_type,
-                            valid_value_types,
-                        )
+                        'Initial value for Shotgun field "%s" is type "%s" but should be of type(s) "%s," please fix.'
+                        % (field_name, field_value_type, valid_value_types,)
                     )
                     return
                 # if we have a list field, make sure the initial value is valid
                 if sg_type in ["list", "status_list"]:
-                    valid_values = entity_schema[field_name].get("properties", {}).get("valid_values", {}).get("value")
+                    valid_values = (
+                        entity_schema[field_name]
+                        .get("properties", {})
+                        .get("valid_values", {})
+                        .get("value")
+                    )
                     if valid_values and field_value not in valid_values:
                         logger.warning(
-                            "Initial value for Shotgun field \"%s\" is \"%s\" but must be one of the following: \"%s\"." % (
-                                field_name,
-                                str(field_value),
-                                ", ".join(valid_values),
-                            )
+                            'Initial value for Shotgun field "%s" is "%s" but must be one of the following: "%s".'
+                            % (field_name, str(field_value), ", ".join(valid_values),)
                         )
                         return
 
@@ -198,7 +188,7 @@ def init_entity(sg, logger, event, args):
 
     # Return if we don't have all the field values we need; we're intentionally
     # excluding event["meta"]["new_value"] because None is a valid value.
-    if (not event.get("meta", {}).get("entity_id")):
+    if not event.get("meta", {}).get("entity_id"):
         return
 
     # Make some vars for convenience.
@@ -209,9 +199,7 @@ def init_entity(sg, logger, event, args):
     # been populated by a user
     fields_to_update = args["initial_data"].keys()
     entity = sg.find_one(
-        entity_type,
-        args["filters"] + [["id", "is", entity_id]],
-        fields_to_update,
+        entity_type, args["filters"] + [["id", "is", entity_id]], fields_to_update,
     )
 
     # Bail if we don't have an entity. This would happen if user-specified
@@ -245,9 +233,6 @@ def init_entity(sg, logger, event, args):
 
         # Tell the logger what happened.
         logger.info(
-            "%s with id %s updated with new data: %s" % (
-                entity_type,
-                entity_id,
-                update_data
-            )
+            "%s with id %s updated with new data: %s"
+            % (entity_type, entity_id, update_data)
         )

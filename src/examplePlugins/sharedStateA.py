@@ -10,8 +10,8 @@
 import os
 
 _state = {
-    'sequential': -1,
-    'rotating': -1,
+    "sequential": -1,
+    "rotating": -1,
 }
 
 
@@ -42,7 +42,7 @@ def callbackA(sg, logger, event, args):
     # As the first thing to run on each event, we can reinizialize the rotating
     # counter.
     global _state
-    _state['rotating'] = -1
+    _state["rotating"] = -1
 
     # Then we pass off to our helper function... because I'm lazy.
     printIds(sg, logger, event, args)
@@ -62,8 +62,10 @@ def printIds(sg, logger, event, args):
     # Here we can increment the two counters that are in shared state. Each
     # callback has played with the contents of this shared dictionary.
     global _state
-    _state['sequential'] += 1
-    _state['rotating'] += 1
+    _state["sequential"] += 1
+    _state["rotating"] += 1
 
     # Log the counters so we can actually see something.
-    logger.info('Sequential #%d - Rotating #%d', _state['sequential'], _state['rotating'])
+    logger.info(
+        "Sequential #%d - Rotating #%d", _state["sequential"], _state["rotating"]
+    )

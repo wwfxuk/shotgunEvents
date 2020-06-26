@@ -37,7 +37,7 @@ def registerCallbacks(reg):
         "first_frame_field": "sg_first_frame",
         "last_frame_field": "sg_last_frame",
         "frame_count_field": "frame_count",
-        "fps": 24.0
+        "fps": 24.0,
     }
 
     # Grab an sg connection for the validator.
@@ -49,7 +49,8 @@ def registerCallbacks(reg):
         return
 
     event_filter = {
-        "Shotgun_%s_Change" % args["entity_type"]: [
+        "Shotgun_%s_Change"
+        % args["entity_type"]: [
             args["head_duration_field"],
             args["tail_duration_field"],
             args["first_frame_field"],
@@ -57,11 +58,7 @@ def registerCallbacks(reg):
     }
 
     reg.registerCallback(
-        script_name,
-        script_key,
-        update_timecode_and_frame_values,
-        event_filter,
-        args,
+        script_name, script_key, update_timecode_and_frame_values, event_filter, args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -82,10 +79,7 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
         entity_schema = sg.schema_field_read(entity_type)
     except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for entity \"%s\": %s" % (
-                entity_type,
-                e
-            )
+            'Can\'t read Shotgun schema for entity "%s": %s' % (entity_type, e)
         )
         return
 
@@ -96,21 +90,16 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
     # was found.
     if not sg_type:
         logger.warning(
-            "%s entity field \"%s\" does not exist in Shotgun, please fix." % (
-                entity_type,
-                field_name,
-            )
+            '%s entity field "%s" does not exist in Shotgun, please fix.'
+            % (entity_type, field_name,)
         )
         return
 
     # Make sure the field is the correct Shotgun type.
     if sg_type not in field_type:
         logger.warning(
-            "Shotgun field \"%s\" is type \"%s\" but should be of type(s) \"%s,\" please fix." % (
-                field_name,
-                sg_type,
-                field_type
-            )
+            'Shotgun field "%s" is type "%s" but should be of type(s) "%s," please fix.'
+            % (field_name, sg_type, field_type)
         )
         return
 
@@ -197,10 +186,8 @@ def is_valid(sg, logger, args):
         sg.schema_field_read(args["entity_type"])
     except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" setting's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" setting\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
@@ -212,20 +199,16 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the setting has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "\"%s\" setting's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                '"%s" setting\'s value is empty but requires a value, please fix.'
+                % (name,)
             )
             return
 
@@ -239,11 +222,7 @@ def is_valid(sg, logger, args):
 
             # Perform some standard checks on the entity and field.
             if not check_entity_schema(
-                sg,
-                logger,
-                checks["entity"],
-                args[name],
-                checks["sg_type"]
+                sg, logger, checks["entity"], args[name], checks["sg_type"]
             ):
                 return
 
@@ -274,11 +253,13 @@ def get_updates(sg, logger, event, args, entity):
 
         # Retrieve the first frame from timecode.
         first_frame = frame_from_timecode(
-            entity[args["timecode_cut_in_field"]], args["fps"]) - \
-            (entity[args["head_duration_field"]] or 0)
+            entity[args["timecode_cut_in_field"]], args["fps"]
+        ) - (entity[args["head_duration_field"]] or 0)
 
         # Register our first_frame value in the update dict.
-        update_data[args["timecode_in_field"]] = timecode_from_frame(first_frame, args["fps"])
+        update_data[args["timecode_in_field"]] = timecode_from_frame(
+            first_frame, args["fps"]
+        )
 
     # If the tail duration changes, update the timecode out value.
     elif event["attribute_name"] == args["tail_duration_field"]:
@@ -289,11 +270,13 @@ def get_updates(sg, logger, event, args, entity):
 
         # Retrieve a frame to convert from timecode.
         timecode_frame = frame_from_timecode(
-            entity.get(args["timecode_cut_out_field"]), args["fps"]) + \
-            (entity.get(args["tail_duration_field"]) or 0)
+            entity.get(args["timecode_cut_out_field"]), args["fps"]
+        ) + (entity.get(args["tail_duration_field"]) or 0)
 
         # Register our timecode_frame value in the update dict.
-        update_data[args["timecode_out_field"]] = timecode_from_frame(timecode_frame, args["fps"])
+        update_data[args["timecode_out_field"]] = timecode_from_frame(
+            timecode_frame, args["fps"]
+        )
 
     # If the first frame changes, adjust the last frame value.
     elif event["attribute_name"] == args["first_frame_field"]:
@@ -303,31 +286,35 @@ def get_updates(sg, logger, event, args, entity):
             return
 
         # Register our last_frame value in the update dict.
-        update_data[args["last_frame_field"]] = \
-            (entity[args["first_frame_field"]] or 0) + \
-            (entity[args["frame_count_field"]] or 0)
+        update_data[args["last_frame_field"]] = (
+            entity[args["first_frame_field"]] or 0
+        ) + (entity[args["frame_count_field"]] or 0)
 
     # If the update_data dict is not empty, we have to also recompute and update
     # the frame_count and last_frame values.
     if update_data:
 
-        timecode_out = \
-            update_data[args["timecode_out_field"]] \
-            if args["timecode_out_field"] in update_data \
+        timecode_out = (
+            update_data[args["timecode_out_field"]]
+            if args["timecode_out_field"] in update_data
             else entity[args["timecode_out_field"]]
+        )
 
-        timecode_in = \
-            update_data[args["timecode_in_field"]] \
-            if args["timecode_in_field"] in update_data \
+        timecode_in = (
+            update_data[args["timecode_in_field"]]
+            if args["timecode_in_field"] in update_data
             else entity[args["timecode_in_field"]]
+        )
 
         frame_duration = frame_from_timecode(
-            timecode_out, args["fps"]) - frame_from_timecode(timecode_in)
+            timecode_out, args["fps"]
+        ) - frame_from_timecode(timecode_in)
         update_data[args["frame_count_field"]] = frame_duration
 
         if entity[args["first_frame_field"]]:
-            update_data[args["last_frame_field"]] = \
-                (entity[args["first_frame_field"]] or 0) + (update_data[args["frame_count_field"]] or 0)
+            update_data[args["last_frame_field"]] = (
+                entity[args["first_frame_field"]] or 0
+            ) + (update_data[args["frame_count_field"]] or 0)
 
     return update_data
 
@@ -343,8 +330,7 @@ def frame_from_timecode(timecode, fps=24.0):
 
     # Return a frame of 0 if we don't have a valid timecode or we have a drop
     # frame timecode (drop frame is unsupported).
-    if not timecode or ":" not in timecode \
-    or ";" in timecode:
+    if not timecode or ":" not in timecode or ";" in timecode:
         return 0
 
     (hour, minute, second, frame) = timecode.split(":")
@@ -409,7 +395,7 @@ def update_timecode_and_frame_values(sg, logger, event, args):
 
     # Return if we don't have all the field values we need.
     if not event.get("meta", {}).get("entity_id"):
-            return
+        return
 
     # Make some vars for convenience.
     entity_id = event["meta"]["entity_id"]
@@ -434,8 +420,7 @@ def update_timecode_and_frame_values(sg, logger, event, args):
 
     # Return if the entity isn't found.
     if not entity:
-        logger.debug(
-            "No %s with id %s.", (entity_type, entity_id))
+        logger.debug("No %s with id %s.", (entity_type, entity_id))
         return
 
     # Determine and calculate values to update on the entity, if any.
@@ -444,14 +429,12 @@ def update_timecode_and_frame_values(sg, logger, event, args):
     # Update our entity with the values in update_data.
     if update_data:
         sg.update(entity_type, entity_id, update_data)
-        logger.info("%s %s updated with %s." % (
-            entity_type,
-            entity[args["entity_name_field"]],
-            update_data,
-        ))
+        logger.info(
+            "%s %s updated with %s."
+            % (entity_type, entity[args["entity_name_field"]], update_data,)
+        )
     else:
-        logger.info("Nothing to update on %s %s with id %s." % (
-            entity_type,
-            entity[args["entity_name_field"]],
-            entity_id,
-        ))
+        logger.info(
+            "Nothing to update on %s %s with id %s."
+            % (entity_type, entity[args["entity_name_field"]], entity_id,)
+        )

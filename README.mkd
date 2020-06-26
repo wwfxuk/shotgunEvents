@@ -51,7 +51,7 @@ A plugin handles:
   script.
 - Minimize network and database load (only one monitor that supplies event to
   many event processing plugins).
-  
+
 
 ## Documentation
 

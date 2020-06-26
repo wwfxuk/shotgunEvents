@@ -1,6 +1,6 @@
 # update_timecode_values.py
 
-This trigger keeps timecode and frame values in sync across a variety of 
+This trigger keeps timecode and frame values in sync across a variety of
 specified fields on an `entity_type`. This is a fairly complicated trigger. See
 QA notes for more detail.
 
@@ -58,4 +58,3 @@ First Frame: 1001
 See attached image for reference and expected calculations:
 
 ![](images/update_timecode_values2.jpg?raw=true)
-

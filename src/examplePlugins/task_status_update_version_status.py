@@ -78,10 +78,12 @@ def task_status_changed(sg, logger, event, args):
     """
 
     # Return if we don't have all the field values we need.
-    if (not event.get("entity", {}).get("id") or
-        not event.get("meta", {}).get("entity_id") or
-        not event.get("id")):
-            return
+    if (
+        not event.get("entity", {}).get("id")
+        or not event.get("meta", {}).get("entity_id")
+        or not event.get("id")
+    ):
+        return
 
     # Make some vars for convenience.
     entity_id = event["entity"]["id"]
@@ -91,36 +93,33 @@ def task_status_changed(sg, logger, event, args):
     # Re-query for the Task Status value to make sure we have an up-to-date
     # new status value. The input value from the event may be inaccurate if the
     # triggers are ever running behind.
-    sg_task = sg.find_one(
-        "Task",
-        [["id", "is", entity_id]],
-        ["sg_status_list"]
-    )
+    sg_task = sg.find_one("Task", [["id", "is", entity_id]], ["sg_status_list"])
 
     # Return if we can't find our Task.
     if not sg_task:
         logger.info(
-            "Unable to retrieve Task (%d) %s from SG for event %d, skipping." %
-            (entity_id, entity_name, event["id"])
+            "Unable to retrieve Task (%d) %s from SG for event %d, skipping."
+            % (entity_id, entity_name, event["id"])
         )
         return
 
     # Grab the Shotgun Status entity the Task was set to.
     new_task_status = sg.find_one(
-        "Status",
-        [["code", "is", sg_task["sg_status_list"]]],
-        [status_mapping_field],
+        "Status", [["code", "is", sg_task["sg_status_list"]]], [status_mapping_field],
     )
 
     # Return if we can't find our Status entity (would be pretty weird).
     if not new_task_status:
-        logger.info("No Status found with code %s, skipping." % sg_task["sg_status_list"])
+        logger.info(
+            "No Status found with code %s, skipping." % sg_task["sg_status_list"]
+        )
         return
 
     # Return if the Status entity's sg_version_status_mapping value is empty.
     if new_task_status[status_mapping_field] is None:
         logger.debug(
-            "No sg_version_status_mapping found for Status with id %s, skipping." % new_task_status["id"]
+            "No sg_version_status_mapping found for Status with id %s, skipping."
+            % new_task_status["id"]
         )
         return
 
@@ -148,9 +147,6 @@ def task_status_changed(sg, logger, event, args):
         logger.debug("Result is: %s" % result)
     except Exception as e:
         logger.warning(
-            "Could not update Version with id %s to Status %s: %s" % (
-                sg_version["id"],
-                new_task_status[status_mapping_field],
-                str(e)
-            )
+            "Could not update Version with id %s to Status %s: %s"
+            % (sg_version["id"], new_task_status[status_mapping_field], str(e))
         )

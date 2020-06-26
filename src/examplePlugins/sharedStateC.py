@@ -11,25 +11,24 @@ import os
 
 
 class Callback(object):
-
     def __init__(self, state, rotate=False):
         self.rotate = rotate
         self.state = state
 
     def __call__(self, sg, logger, event, args):
         if self.rotate:
-            self.state['rotating'] = -1
+            self.state["rotating"] = -1
 
         # Here we can increment the two counters that are in shared state. Each
         # callback has played with the contents of this shared dictionary.
-        self.state['sequential'] += 1
-        self.state['rotating'] += 1
+        self.state["sequential"] += 1
+        self.state["rotating"] += 1
 
         # Log the counters so we can actually see something.
         logger.info(
-            'Sequential #%d - Rotating #%d',
-            self.state['sequential'],
-            self.state['rotating'],
+            "Sequential #%d - Rotating #%d",
+            self.state["sequential"],
+            self.state["rotating"],
         )
 
 
@@ -43,8 +42,8 @@ def registerCallbacks(reg):
 
     # Prepare the shared state object
     _state = {
-        'sequential': -1,
-        'rotating': -1,
+        "sequential": -1,
+        "rotating": -1,
     }
 
     # Callbacks are called in registration order. So callbackA will be called

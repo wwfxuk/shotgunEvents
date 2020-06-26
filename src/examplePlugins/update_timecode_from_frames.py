@@ -29,7 +29,7 @@ def registerCallbacks(reg):
         "entity_type": "Shot",
         "source_frames_field": "sg_cut_duration",
         "target_tc_field": "sg_cut_length_tc",
-        "fps": 24.0
+        "fps": 24.0,
     }
 
     # Grab an sg connection for the validator.
@@ -45,11 +45,7 @@ def registerCallbacks(reg):
     }
 
     reg.registerCallback(
-        script_name,
-        script_key,
-        update_shot_cut_duration_timecode,
-        event_filter,
-        args,
+        script_name, script_key, update_shot_cut_duration_timecode, event_filter, args,
     )
 
 
@@ -66,7 +62,7 @@ def is_valid(sg, logger, args):
     args_to_check = {
         "source_frames_field": {"sg_type": "number", "type": "str"},
         "target_tc_field": {"sg_type": "timecode", "type": "str"},
-        "fps": {"type": "float"}
+        "fps": {"type": "float"},
     }
 
     # Make sure we can read the entity_type's schema.
@@ -74,10 +70,8 @@ def is_valid(sg, logger, args):
         entity_schema = sg.schema_field_read(args["entity_type"])
     except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" setting's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" setting\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
@@ -95,11 +89,8 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if value_type not in type_targets["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    type_targets["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, type_targets["type"])
             )
             return
 
@@ -114,22 +105,16 @@ def is_valid(sg, logger, args):
         # Make sure the field exists on the entity.
         if not sg_type:
             logger.warning(
-                "\"%s\" setting refers to a %s entity field (\"%s\") that doesn't exist, please fix." % (
-                    name,
-                    args["entity_type"],
-                    args[name],
-                )
+                '"%s" setting refers to a %s entity field ("%s") that doesn\'t exist, please fix.'
+                % (name, args["entity_type"], args[name],)
             )
             return
 
         # Make sure the field is the correct Shotgun type.
         if sg_type not in type_targets["sg_type"]:
             logger.warning(
-                "\"%s\" setting refers to a Shotgun field that is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    sg_type,
-                    type_targets["sg_type"]
-                )
+                '"%s" setting refers to a Shotgun field that is type "%s" but should be type "%s," please fix.'
+                % (name, sg_type, type_targets["sg_type"])
             )
             return
 
@@ -156,9 +141,7 @@ def update_shot_cut_duration_timecode(sg, logger, event, args):
 
     # Re-query the entity to gather extra field values.
     entity = sg.find_one(
-        args["entity_type"],
-        [["id", "is", entity_id]],
-        [args["source_frames_field"]],
+        args["entity_type"], [["id", "is", entity_id]], [args["source_frames_field"]],
     )
 
     # Return if we don't have an entity dict.
@@ -172,18 +155,26 @@ def update_shot_cut_duration_timecode(sg, logger, event, args):
         sg.update(
             args["entity_type"],
             entity["id"],
-            {args["target_tc_field"]: int(
-                math.ceil(entity[args["source_frames_field"]] / fps * 1000)
-            )},
+            {
+                args["target_tc_field"]: int(
+                    math.ceil(entity[args["source_frames_field"]] / fps * 1000)
+                )
+            },
         )
-        logger.info("Updated %s %s timecode with %s" % (
-            args["entity_type"],
-            str(entity["id"]),
-            {args["target_tc_field"]: int(
-                math.ceil(entity[args["source_frames_field"]] / fps * 1000)
-            )},
-        ))
+        logger.info(
+            "Updated %s %s timecode with %s"
+            % (
+                args["entity_type"],
+                str(entity["id"]),
+                {
+                    args["target_tc_field"]: int(
+                        math.ceil(entity[args["source_frames_field"]] / fps * 1000)
+                    )
+                },
+            )
+        )
     else:
-        logger.info("Did not update %s with ID %s, nothing to do." % (
-            args["entity_type"], entity["id"])
+        logger.info(
+            "Did not update %s with ID %s, nothing to do."
+            % (args["entity_type"], entity["id"])
         )
