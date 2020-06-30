@@ -398,7 +398,7 @@ class Engine(object):
 
         if eventIdFile and os.path.exists(eventIdFile):
             try:
-                fh = open(eventIdFile)
+                fh = open(eventIdFile, "rb")
                 try:
                     self._eventIdData = pickle.load(fh)
 
@@ -615,9 +615,8 @@ class Engine(object):
             for colPath, state in list(self._eventIdData.items()):
                 if state:
                     try:
-                        fh = open(eventIdFile, "w")
-                        pickle.dump(self._eventIdData, fh)
-                        fh.close()
+                        with open(eventIdFile, "wb") as file_handler:
+                            pickle.dump(self._eventIdData, file_handler)
                     except OSError as err:
                         self.log.error(
                             "Can not write event id data to %s.\n\n%s",
