@@ -383,7 +383,7 @@ class Engine(object):
             self.log.warning("Keyboard interrupt. Cleaning up...")
         except Exception as err:
             msg = "Crash!!!!! Unexpected error (%s) in main loop.\n\n%s"
-            self.log.critical(msg, type(err), traceback.format_exc(err))
+            self.log.critical(msg, type(err), traceback.format_exc())
 
     def _loadEventIdData(self):
         """
