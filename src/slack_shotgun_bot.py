@@ -1,13 +1,13 @@
 import os
 
 # import shotgun_api3
-from slackclient import SlackClient
+from slack import WebClient
 
-slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
-slack_user_token = os.environ["SLACK_USER_TOKEN"]
-slack_bot_user_id = os.environ["SLACK_BOT_USER_ID"]
-sc_bot = SlackClient(slack_bot_token)
-sc_user = SlackClient(slack_user_token)
+SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
+SLACK_USER_TOKEN = os.environ["SLACK_USER_TOKEN"]
+SLACK_BOT_APP_ID = os.environ["SLACK_BOT_APP_ID"]
+SC_BOT = WebClient(token=SLACK_BOT_TOKEN)
+SC_USER = WebClient(token=SLACK_USER_TOKEN)
 
 
 def send_message(channel, message, attachments=None):
@@ -17,7 +17,7 @@ def send_message(channel, message, attachments=None):
     :param channel: A slack channel ID or user ID.
     :param message: The slack message.
     """
-    slack_message = sc_bot.api_call(
+    slack_message = SC_BOT.api_call(
         "chat.postMessage",
         channel=channel,
         as_user=True,
@@ -35,15 +35,15 @@ def create_channel(channel_name, private=False):
     """
     channel_id = None
     if private:
-        new_channel = sc_user.api_call("groups.create", name=channel_name)
+        new_channel = SC_USER.api_call("groups.create", name=channel_name)
         if new_channel:
             channel_id = new_channel.get("group").get("id")
     else:
-        new_channel = sc_user.api_call("channels.create", name=channel_name)
+        new_channel = SC_USER.api_call("channels.create", name=channel_name)
         if new_channel:
             channel_id = new_channel.get("channel").get("id")
     if channel_id:
-        invite_to_channel(slack_bot_user_id, channel_id)
+        invite_to_channel(SLACK_BOT_APP_ID, channel_id)
     return new_channel
 
 
@@ -55,9 +55,9 @@ def invite_to_channel(user, channel):
     :param channel: A slack channel ID.
     """
     if channel.startswith("G"):
-        invite = sc_user.api_call("groups.invite", user=user, channel=channel)
+        invite = SC_USER.api_call("groups.invite", user=user, channel=channel)
     else:
-        invite = sc_user.api_call("channels.invite", user=user, channel=channel)
+        invite = SC_USER.api_call("channels.invite", user=user, channel=channel)
     return invite
 
 
@@ -69,9 +69,9 @@ def kick_from_channel(user, channel):
     :param channel: A slack channel ID.
     """
     if channel.startswith("G"):
-        kick = sc_user.api_call("groups.kick", name=user, channel=channel)
+        kick = SC_USER.api_call("groups.kick", name=user, channel=channel)
     else:
-        kick = sc_user.api_call("channel.kick", name=user, channel=channel)
+        kick = SC_USER.api_call("channel.kick", name=user, channel=channel)
     return kick
 
 
@@ -83,7 +83,7 @@ def invite_to_workspace(email, channels=None):
     :param channel: A comma separated list of channel IDs for the new user.
     """
     # TODO: Test this. This is an undocumented slack method.
-    invite = sc_user.api_call("users.admin.invite", email=email, channels=channels)
+    invite = SC_USER.api_call("users.admin.invite", email=email, channels=channels)
     return invite
 
 
@@ -105,7 +105,7 @@ def get_slack_user_id(sg, shotgun_id):
         return sg_user["sg_slack_id"]
     # otherwise, look up the slack user by matching email
     else:
-        slack_user = sc_bot.api_call("users.lookupByEmail", email=sg_user["email"])
+        slack_user = SC_BOT.api_call("users.lookupByEmail", email=sg_user["email"])
 
         # if a slack user is found, return the ID and record it
         # in the users shotgun record so we dont query slack next time
