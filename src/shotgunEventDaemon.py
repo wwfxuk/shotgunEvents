@@ -5,7 +5,7 @@
 # chkconfig: 345 99 00
 # description: Shotgun event daemon
 #
-### BEGIN INIT INFO
+# BEGIN INIT INFO
 # Provides: shotgunEvent
 # Required-Start: $network
 # Should-Start: $remote_fs
@@ -14,7 +14,7 @@
 # Default-Start: 2 3 4 5
 # Short-Description: Shotgun event daemon
 # Description: Shotgun event daemon
-### END INIT INFO
+# END INIT INFO
 
 """
 For an overview of shotgunEvents, please see raw documentation in the docs
@@ -28,7 +28,8 @@ from __future__ import print_function
 __version__ = "0.9"
 __version_info__ = (0, 9)
 
-import ConfigParser
+from ConfigParser import SafeConfigParser
+import StringIO
 import datetime
 import imp
 import logging
@@ -39,6 +40,9 @@ import socket
 import sys
 import time
 import traceback
+import daemonizer
+import shotgun_api3 as sg
+from shotgun_api3.lib.sgtimezone import SgTimezone
 
 from distutils.version import StrictVersion
 
@@ -52,11 +56,6 @@ if sys.platform == "win32":
     import win32service
     import win32event
     import servicemanager
-
-import daemonizer
-import shotgun_api3 as sg
-from shotgun_api3.lib.sgtimezone import SgTimezone
-
 
 SG_TIMEZONE = SgTimezone()
 CURRENT_PYTHON_VERSION = StrictVersion(sys.version.split()[0])
@@ -147,10 +146,18 @@ def _addMailHandlerToLogger(
         logger.addHandler(mailHandler)
 
 
-class Config(ConfigParser.ConfigParser):
+class Config(SafeConfigParser):
     def __init__(self, path):
-        ConfigParser.ConfigParser.__init__(self)
+        # with open(path, 'r') as cfg_file:
+        #     cfg_txt = os.path.expandvars(cfg_file.read())
+        #     SafeConfigParser.__init__(self)
+        #     self.readfp(StringIO.StringIO(cfg_txt))
+        SafeConfigParser.__init__(self, os.environ)
         self.read(path)
+
+    # keeps options case sensative
+    def optionxform(self, optionstr):
+        return optionstr
 
     def getShotgunURL(self):
         return self.get("shotgun", "server")
@@ -167,7 +174,7 @@ class Config(ConfigParser.ConfigParser):
             if not proxy_server:
                 return None
             return proxy_server
-        except ConfigParser.NoOptionError:
+        except SafeConfigParser.NoOptionError:
             return None
 
     def getEventIdFile(self):
