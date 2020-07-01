@@ -30,7 +30,11 @@ def registerCallbacks(reg):
     # Register our callback with the Shotgun_%s_Change event and tell the logger
     # about it.
     reg.registerCallback(
-        script_name, script_key, createChannel, {"Shotgun_Project_New": None}, None,
+        script_name,
+        script_key,
+        createChannel,
+        {"Shotgun_Project_New": None},
+        None,
     )
     reg.logger.debug("Registered callback.")
 
@@ -80,7 +84,11 @@ def createChannel(sg, logger, event, args):
     if not project_id:
         return
 
-    proj_data = sg.find_one("Project", [["id", "is", project_id]], ["code"])
+    proj_data = sg.find_one(
+        "Project",
+        [["id", "is", project_id]],
+        ["code"]
+    )
 
     if not proj_data:
         logger.info("Project data returned None. Skipping.")
@@ -88,9 +96,7 @@ def createChannel(sg, logger, event, args):
 
     channel_name = "proj-{}".format(proj_data["code"])
 
-    logger.debug(
-        "Asking slack to create the new private channel {}".format(channel_name)
-    )
+    logger.debug("Asking slack to create the new private channel {}".format(channel_name))
     new_channel = slack_shotgun_bot.create_channel(channel_name, private=True)
 
     if new_channel["ok"]:
@@ -100,15 +106,7 @@ def createChannel(sg, logger, event, args):
         else:
             channel_id = new_channel.get("channel").get("id")
             channel_name = new_channel.get("channel").get("name")
-        logger.debug(
-            "New slack group made with name #{} and id {}".format(
-                channel_name, channel_id
-            )
-        )
+        logger.debug("New slack group made with name #{} and id {}".format(channel_name, channel_id))
         sg.update("Project", project_id, {"sg_slack_channel_id": channel_id})
     elif new_channel.get("error"):
-        logger.warning(
-            "Slack channel was NOT created successfully with error: {}".format(
-                new_channel["error"]
-            )
-        )
+        logger.warning("Slack channel was NOT created successfully with error: {}".format(new_channel["error"]))

@@ -28,7 +28,11 @@ def registerCallbacks(reg):
 
     eventFilter = {"Shotgun_Task_Change": "task_assignees"}
     reg.registerCallback(
-        script_name, script_key, task_assignment_alert, eventFilter, None,
+        script_name,
+        script_key,
+        task_assignment_alert,
+        eventFilter,
+        None,
     )
     reg.logger.debug("Registered callback.")
 
@@ -73,9 +77,7 @@ def task_assignment_alert(sg, logger, event, args):
         return
 
     # Get the Coordinator group
-    coords_group = sg.find_one("Group", [["code", "is", "Coordinators"]], ["users"])[
-        "users"
-    ]
+    coords_group = sg.find_one("Group", [["code", "is", "Coordinators"]], ["users"])["users"]
 
     # If the event user is in the Coordinators Group, then bail. We don't
     # want to see all the versions from ingest assignments
@@ -84,10 +86,16 @@ def task_assignment_alert(sg, logger, event, args):
         return
 
     # query some project data
-    proj_data = sg.find_one("Project", [["id", "is", event["project"]["id"]]], ["code"])
+    proj_data = sg.find_one(
+        "Project",
+        [["id", "is", event["project"]["id"]]],
+        ["code"]
+    )
 
     task_data = sg.find_one(
-        "Task", [["id", "is", event["entity"]["id"]]], ["content", "entity"]
+        "Task",
+        [["id", "is", event["entity"]["id"]]],
+        ["content", "entity"]
     )
 
     task_link = task_data.get("entity")
@@ -101,32 +109,17 @@ def task_assignment_alert(sg, logger, event, args):
         slack_id = slack_shotgun_bot.get_slack_user_id(sg, user["id"])
         if slack_id:
             data = {
-                "project": "<{}/page/project_overview?project_id={}|{}>".format(
-                    __SG_SITE, proj_data.get("id"), proj_data.get("code")
-                ),
-                "task": "<{}/detail/Task/{}|{}>".format(
-                    __SG_SITE, task_data.get("id"), task_data.get("content")
-                ),
+                'project': "<{}/page/project_overview?project_id={}|{}>".format(__SG_SITE, proj_data.get("id"), proj_data.get("code")),
+                'task': "<{}/detail/Task/{}|{}>".format(__SG_SITE, task_data.get("id"), task_data.get("content")),
             }
             message = "You've been assigned {project} / {task}".format(**data)
 
             if task_link:
-                data["task_link"] = "<{}/detail/{}/{}|{}>".format(
-                    __SG_SITE,
-                    task_link.get("type"),
-                    task_link.get("id"),
-                    task_link.get("name"),
-                )
-                message = "You've been assigned {project} / {task_link} / {task}".format(
-                    **data
-                )
+                data['task_link'] = "<{}/detail/{}/{}|{}>".format(__SG_SITE, task_link.get("type"), task_link.get("id"), task_link.get("name"))
+                message = "You've been assigned {project} / {task_link} / {task}".format(**data)
 
             slack_message = slack_shotgun_bot.send_message(slack_id, message)
             if slack_message["ok"]:
                 logger.info("New assignment alert sent to {}.".format(user["name"]))
             elif slack_message["error"]:
-                logger.warning(
-                    "New assignment alert to {} failed to send with error: {}".format(
-                        user["name"], slack_message["error"]
-                    )
-                )
+                logger.warning("New assignment alert to {} failed to send with error: {}".format(user["name"], slack_message["error"]))

@@ -26,20 +26,16 @@ def registerCallbacks(reg):
         reg.logger.warning("Plugin is not valid, will not register callback.")
         return
 
-    event_filter = {
-        "Shotgun_Project_Change": [
-            "users",
-            "sg_vfx_supervisor",
-            "sg_cg_supervisor",
-            "sg_producer",
-            "sg_coordinator",
-        ]
-    }
+    event_filter = {"Shotgun_Project_Change": ["users", "sg_vfx_supervisor", "sg_cg_supervisor", "sg_producer", "sg_coordinator"]}
 
     # Register our callback with the Shotgun_%s_Change event and tell the logger
     # about it.
     reg.registerCallback(
-        script_name, script_key, user_to_channel, event_filter, None,
+        script_name,
+        script_key,
+        user_to_channel,
+        event_filter,
+        None,
     )
     reg.logger.debug("Registered callback.")
 
@@ -87,7 +83,9 @@ def user_to_channel(sg, logger, event, args):
         return
 
     proj_data = sg.find_one(
-        "Project", [["id", "is", project_id]], ["sg_slack_channel_id"]
+        "Project",
+        [["id", "is", project_id]],
+        ["sg_slack_channel_id"]
     )
 
     if not proj_data:
@@ -105,31 +103,15 @@ def user_to_channel(sg, logger, event, args):
             slack_id = slack_shotgun_bot.get_slack_user_id(sg, user["id"])
             invite = slack_shotgun_bot.invite_to_channel(slack_id, slack_channel)
             if invite["ok"]:
-                logger.info(
-                    "User {} added to slack channel {}.".format(
-                        user["name"], slack_channel
-                    )
-                )
+                logger.info("User {} added to slack channel {}.".format(user["name"], slack_channel))
             elif invite.get("error"):
-                logger.info(
-                    "Failed to add user {}({}) to slack channel {} wth error: {}".format(
-                        user["name"], slack_id, slack_channel, invite["error"]
-                    )
-                )
+                logger.info("Failed to add user {}({}) to slack channel {} wth error: {}".format(user["name"], slack_id, slack_channel, invite["error"]))
 
     for user in users_removed:
         if user["type"] == "HumanUser":
             slack_id = slack_shotgun_bot.get_slack_user_id(sg, user["id"])
             kick = slack_shotgun_bot.kick_from_channel(slack_id, slack_channel)
             if kick["ok"]:
-                logger.info(
-                    "User {} removed from slack channel {}.".format(
-                        user["name"], slack_channel
-                    )
-                )
+                logger.info("User {} removed from slack channel {}.".format(user["name"], slack_channel))
             elif kick.get("error"):
-                logger.info(
-                    "Failed to remove user {} from slack channel {} wth error: {}".format(
-                        user["name"], slack_channel, kick["error"]
-                    )
-                )
+                logger.info("Failed to remove user {} from slack channel {} wth error: {}".format(user["name"], slack_channel, kick["error"]))

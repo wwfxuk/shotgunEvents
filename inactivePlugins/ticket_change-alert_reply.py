@@ -29,7 +29,11 @@ def registerCallbacks(reg):
 
     eventFilter = {"Shotgun_Ticket_Change": "replies"}
     reg.registerCallback(
-        script_name, script_key, ticket_reply_alert, eventFilter, None,
+        script_name,
+        script_key,
+        ticket_reply_alert,
+        eventFilter,
+        None,
     )
     reg.logger.debug("Registered callback.")
 
@@ -74,27 +78,23 @@ def ticket_reply_alert(sg, logger, event, args):
 
     # query some project data
     proj_data = sg.find_one(
-        "Project", [["id", "is", event["project"]["id"]]], ["code", "name"]
+        "Project",
+        [["id", "is", event["project"]["id"]]],
+        ["code", "name"]
     )
 
     ticket_data = sg.find_one(
         "Ticket",
         [["id", "is", event["entity"]["id"]]],
-        [
-            "title",
-            "sg_ticket_type",
-            "sg_priority",
-            "description",
-            "created_by",
-            "sg_status_list",
-            "sg_ticket_type",
-            "addressings_cc",
-            "addressings_to",
-        ],
+        ["title", "sg_ticket_type", "sg_priority", "description",
+            "created_by", "sg_status_list", "sg_ticket_type",
+            "addressings_cc", "addressings_to"]
     )
 
     ticket_status = sg.find_one(
-        "Status", [["code", "is", ticket_data.get("sg_status_list")]], ["name"]
+        "Status",
+        [["code", "is", ticket_data.get("sg_status_list")]],
+        ["name"]
     )["name"]
 
     if ticket_data.get("sg_priority").startswith("1"):
@@ -104,34 +104,30 @@ def ticket_reply_alert(sg, logger, event, args):
     else:
         priority_color = "good"
 
-    attachments = [
-        {
-            # "pretext": "Ticket alert:",
-            "color": priority_color,
-            "title": "New reply on Ticket #{}: {}".format(
-                ticket_data.get("id"), parseHtml(ticket_data.get("title"))
-            ),
-            "title_link": "{}/detail/Ticket/{}".format(
-                __SG_SITE, ticket_data.get("id")
-            ),
-            "text": parseHtml(event.get("meta", {}).get("added")[0].get("name")),
-            "author_name": ":writing_hand: {}".format(event.get("user")["name"]),
-            "author_link": "{}/detail/HumanUser/{}".format(
-                __SG_SITE, event.get("user")["id"]
-            ),
-            "fields": [
-                {"title": "Project", "value": proj_data.get("name"), "short": True},
-                {"title": "Status", "value": ticket_status, "short": True},
-            ],
-        }
-    ]
+    attachments = [{
+        # "pretext": "Ticket alert:",
+        "color": priority_color,
+        "title": "New reply on Ticket #{}: {}".format(ticket_data.get("id"), parseHtml(ticket_data.get("title"))),
+        "title_link": "{}/detail/Ticket/{}".format(__SG_SITE, ticket_data.get("id")),
+        "text": parseHtml(event.get("meta", {}).get("added")[0].get("name")),
+        "author_name": ":writing_hand: {}".format(event.get("user")["name"]),
+        "author_link": "{}/detail/HumanUser/{}".format(__SG_SITE, event.get("user")["id"]),
+        "fields": [
+            {
+                "title": "Project",
+                "value": proj_data.get("name"),
+                "short": True
+            },
+            {
+                "title": "Status",
+                "value": ticket_status,
+                "short": True
+            },
+        ]
+    }]
 
-    sg_users = (
-        ticket_data.get("addressings_to")
-        + ticket_data.get("addressings_cc")
-        + [ticket_data.get("created_by")]
-    )
-    sg_users = [i for n, i in enumerate(sg_users) if i not in sg_users[n + 1 :]]
+    sg_users = ticket_data.get("addressings_to") + ticket_data.get("addressings_cc") + [ticket_data.get("created_by")]
+    sg_users = [i for n, i in enumerate(sg_users) if i not in sg_users[n + 1:]]
     users = []
     for sg_user in sg_users:
         if sg_user == event.get("user"):
@@ -139,7 +135,11 @@ def ticket_reply_alert(sg, logger, event, args):
         elif sg_user["type"] == "HumanUser":
             users.append(sg_user)
         elif sg_user["type"] == "Group":
-            group_users = sg.find_one("Group", [["id", "is", sg_user["id"]]], ["users"])
+            group_users = sg.find_one(
+                "Group",
+                [["id", "is", sg_user["id"]]],
+                ["users"]
+            )
             for group_user in group_users["users"]:
                 if group_user == event.get("user"):
                     pass
@@ -149,17 +149,11 @@ def ticket_reply_alert(sg, logger, event, args):
     for user in users:
         slack_id = slack_shotgun_bot.get_slack_user_id(sg, user["id"])
         if slack_id:
-            slack_message = slack_shotgun_bot.send_message(
-                slack_id, None, attachments=attachments
-            )
+            slack_message = slack_shotgun_bot.send_message(slack_id, None, attachments=attachments)
             if slack_message["ok"]:
                 logger.info("Ticket reply alert sent to {}.".format(user["name"]))
             elif slack_message["error"]:
-                logger.warning(
-                    "Ticket reply alert to {} failed to send with error: {}".format(
-                        user["name"], slack_message["error"]
-                    )
-                )
+                logger.warning("Ticket reply alert to {} failed to send with error: {}".format(user["name"], slack_message["error"]))
 
     # slack_id = "U1FU62WKS"
     # if slack_id:

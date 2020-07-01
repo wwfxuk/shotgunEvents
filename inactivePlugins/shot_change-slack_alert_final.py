@@ -33,7 +33,11 @@ def registerCallbacks(reg):
 
     eventFilter = {"Shotgun_Shot_Change": args["shot_status_field"]}
     reg.registerCallback(
-        script_name, script_key, shot_finaled_alert, eventFilter, args,
+        script_name,
+        script_key,
+        shot_finaled_alert,
+        eventFilter,
+        args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -78,80 +82,73 @@ def shot_finaled_alert(sg, logger, event, args):
 
     # If the new value didnt change skip
     if event["meta"]["new_value"] == event["meta"]["old_value"]:
-        logger.debug("New value equals old value, skipping.")
+        logger.debug(
+            "New value equals old value, skipping."
+        )
         return
 
     # Re-query the Proejct to get necessary field values.
     project = sg.find_one(
-        "Project", [["id", "is", project_id]], ["code", "sg_slack_channel_id"]
+        "Project",
+        [["id", "is", project_id]],
+        ["code", "sg_slack_channel_id"]
     )
 
     # Return if we can't find the Project.
     if not project:
-        logger.debug("Could not find Project with id %s, skipping." % entity_id)
+        logger.debug(
+            "Could not find Project with id %s, skipping." % entity_id
+        )
         return
 
     if not project.get("sg_slack_channel_id"):
-        logger.debug("Project does not have a slack channel id, skipping.")
+        logger.debug(
+            "Project does not have a slack channel id, skipping."
+        )
         return
 
     # Re-query the Shot to get necessary field values.
     shot = sg.find_one(
-        "Shot", [["id", "is", entity_id]], ["code", args["shot_status_field"]]
+        "Shot",
+        [["id", "is", entity_id]],
+        ["code", args["shot_status_field"]]
     )
 
     # Return if we can't find the Shot.
     if not shot:
-        logger.debug("Could not find Shot with id %s, skipping." % entity_id)
+        logger.debug(
+            "Could not find Shot with id %s, skipping." % entity_id
+        )
         return
 
     # Return if the shot status already changed
     if not shot[args["shot_status_field"]] == event["meta"]["new_value"]:
         logger.debug(
-            'Shot status already no longer "%s", skipping.' % event["meta"]["new_value"]
+            "Shot status already no longer \"%s\", skipping." % event["meta"]["new_value"]
         )
         return
 
     # Return if the Shot status is not in the query_statuses list.
-    if (
-        args.get("query_statuses")
-        and shot[args["shot_status_field"]] not in args["query_statuses"]
-    ):
-        logger.debug(
-            'Ignoring %s, status "%s" is not of allowed type(s): %s.'
-            % (shot["code"], shot[args["shot_status_field"]], args["query_statuses"],)
+    if args.get("query_statuses") \
+            and shot[args["shot_status_field"]] not in args["query_statuses"]:
+        logger.debug("Ignoring %s, status \"%s\" is not of allowed type(s): %s." % (
+            shot["code"],
+            shot[args["shot_status_field"]],
+            args["query_statuses"],
+        )
         )
         return
 
-    emoji_list = [
-        ":tada:",
-        ":+1:",
-        ":sunglasses:",
-        ":beer:",
-        ":trophy:",
-        ":fire:",
-        ":cat:",
-        ":dog:",
-    ]
+    emoji_list = [":tada:", ":+1:", ":sunglasses:", ":beer:", ":trophy:", ":fire:", ":cat:", ":dog:"]
 
     data = {
-        "shot": "<{}/detail/Shot/{}|{}>".format(
-            __SG_SITE, shot.get("id"), shot.get("code")
-        ),
-        "emoji": random.choice(emoji_list),
+        'shot': "<{}/detail/Shot/{}|{}>".format(__SG_SITE, shot.get("id"), shot.get("code")),
+        'emoji': random.choice(emoji_list)
     }
 
     message = "{emoji} Shot *{shot}* has been finaled!".format(**data)
-    slack_message = slack_shotgun_bot.send_message(
-        project.get("sg_slack_channel_id"), message
-    )
+    slack_message = slack_shotgun_bot.send_message(project.get("sg_slack_channel_id"), message)
     if slack_message["ok"]:
-        logger.info(
-            "Shot final alert sent to {}.".format(project.get("sg_slack_channel_id"))
-        )
+        logger.info("Shot final alert sent to {}.".format(project.get("sg_slack_channel_id")))
     elif slack_message["error"]:
-        logger.warning(
-            "Shot final alert to {} failed to send with error: {}".format(
-                project.get("sg_slack_channel_id"), slack_message["error"]
-            )
-        )
+        logger.warning("Shot final alert to {} failed to send with error: {}".format(project.get("sg_slack_channel_id"), slack_message["error"]))

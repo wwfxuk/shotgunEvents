@@ -19,7 +19,7 @@ def registerCallbacks(reg):
     """
 
     # filter for login events and register the callback
-    eventFilter = {"Shotgun_User_Login": None}
+    eventFilter = {'Shotgun_User_Login': None}
     reg.registerCallback(
         os.environ["SG_SCRIPT_NAME"],
         os.environ["SG_SCRIPT_KEY"],

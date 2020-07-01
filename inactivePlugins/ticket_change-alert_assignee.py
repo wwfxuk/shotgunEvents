@@ -29,7 +29,11 @@ def registerCallbacks(reg):
 
     eventFilter = {"Shotgun_Ticket_Change": "addressings_to"}
     reg.registerCallback(
-        script_name, script_key, ticket_assignment_alert, eventFilter, None,
+        script_name,
+        script_key,
+        ticket_assignment_alert,
+        eventFilter,
+        None,
     )
     reg.logger.debug("Registered callback.")
 
@@ -74,25 +78,21 @@ def ticket_assignment_alert(sg, logger, event, args):
 
     # query some project data
     proj_data = sg.find_one(
-        "Project", [["id", "is", event["project"]["id"]]], ["code", "name"]
+        "Project",
+        [["id", "is", event["project"]["id"]]],
+        ["code", "name"]
     )
 
     ticket_data = sg.find_one(
         "Ticket",
         [["id", "is", event["entity"]["id"]]],
-        [
-            "title",
-            "sg_ticket_type",
-            "sg_priority",
-            "description",
-            "created_by",
-            "sg_status_list",
-            "sg_ticket_type",
-        ],
+        ["title", "sg_ticket_type", "sg_priority", "description", "created_by", "sg_status_list", "sg_ticket_type"]
     )
 
     ticket_status = sg.find_one(
-        "Status", [["code", "is", ticket_data.get("sg_status_list")]], ["name"]
+        "Status",
+        [["code", "is", ticket_data.get("sg_status_list")]],
+        ["name"]
     )["name"]
 
     if ticket_data.get("sg_priority").startswith("1"):
@@ -102,39 +102,37 @@ def ticket_assignment_alert(sg, logger, event, args):
     else:
         priority_color = "good"
 
-    attachments = [
-        {
-            # "pretext": "Ticket alert:",
-            "color": priority_color,
-            "title": "You've been assigned Ticket #{}: {}".format(
-                ticket_data.get("id"), parseHtml(ticket_data.get("title"))
-            ),
-            "title_link": "{}/detail/Ticket/{}".format(
-                __SG_SITE, ticket_data.get("id")
-            ),
-            "text": parseHtml(ticket_data.get("description")),
-            "author_name": ":writing_hand: {}".format(
-                ticket_data.get("created_by")["name"]
-            ),
-            "author_link": "{}/detail/HumanUser/{}".format(
-                __SG_SITE, ticket_data.get("created_by")["id"]
-            ),
-            "fields": [
-                {"title": "Project", "value": proj_data.get("name"), "short": True},
-                {
-                    "title": "Priority",
-                    "value": ticket_data.get("sg_priority"),
-                    "short": True,
-                },
-                {"title": "Status", "value": ticket_status, "short": True},
-                {
-                    "title": "Type",
-                    "value": ticket_data.get("sg_ticket_type"),
-                    "short": True,
-                },
-            ],
-        }
-    ]
+    attachments = [{
+        # "pretext": "Ticket alert:",
+        "color": priority_color,
+        "title": "You've been assigned Ticket #{}: {}".format(ticket_data.get("id"), parseHtml(ticket_data.get("title"))),
+        "title_link": "{}/detail/Ticket/{}".format(__SG_SITE, ticket_data.get("id")),
+        "text": parseHtml(ticket_data.get("description")),
+        "author_name": ":writing_hand: {}".format(ticket_data.get("created_by")["name"]),
+        "author_link": "{}/detail/HumanUser/{}".format(__SG_SITE, ticket_data.get("created_by")["id"]),
+        "fields": [
+            {
+                "title": "Project",
+                "value": proj_data.get("name"),
+                "short": True
+            },
+            {
+                "title": "Priority",
+                "value": ticket_data.get("sg_priority"),
+                "short": True
+            },
+            {
+                "title": "Status",
+                "value": ticket_status,
+                "short": True
+            },
+            {
+                "title": "Type",
+                "value": ticket_data.get("sg_ticket_type"),
+                "short": True
+            },
+        ]
+    }]
 
     users = []
     for ticket_assignee in ticket_assignees:
@@ -144,7 +142,9 @@ def ticket_assignment_alert(sg, logger, event, args):
             users.append(ticket_assignee)
         elif ticket_assignee["type"] == "Group":
             group_users = sg.find_one(
-                "Group", [["id", "is", ticket_assignee["id"]]], ["users"]
+                "Group",
+                [["id", "is", ticket_assignee["id"]]],
+                ["users"]
             )
             for group_user in group_users["users"]:
                 if group_user == event.get("user"):
@@ -155,17 +155,11 @@ def ticket_assignment_alert(sg, logger, event, args):
     for user in users:
         slack_id = slack_shotgun_bot.get_slack_user_id(sg, user["id"])
         if slack_id:
-            slack_message = slack_shotgun_bot.send_message(
-                slack_id, None, attachments=attachments
-            )
+            slack_message = slack_shotgun_bot.send_message(slack_id, None, attachments=attachments)
             if slack_message["ok"]:
                 logger.info("New assignment alert sent to {}.".format(user["name"]))
             elif slack_message["error"]:
-                logger.warning(
-                    "New assignment alert to {} failed to send with error: {}".format(
-                        user["name"], slack_message["error"]
-                    )
-                )
+                logger.warning("New assignment alert to {} failed to send with error: {}".format(user["name"], slack_message["error"]))
 
     # slack_id = "U1FU62WKS"
     # if slack_id:

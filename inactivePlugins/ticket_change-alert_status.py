@@ -33,7 +33,11 @@ def registerCallbacks(reg):
 
     eventFilter = {"Shotgun_Ticket_Change": args["ticket_status_field"]}
     reg.registerCallback(
-        script_name, script_key, ticket_status_alert, eventFilter, args,
+        script_name,
+        script_key,
+        ticket_status_alert,
+        eventFilter,
+        args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -78,64 +82,63 @@ def ticket_status_alert(sg, logger, event, args):
 
     # If the new value didnt change skip
     if event["meta"]["new_value"] == event["meta"]["old_value"]:
-        logger.debug("New value equals old value, skipping.")
+        logger.debug(
+            "New value equals old value, skipping."
+        )
         return
 
     # Re-query the Proejct to get necessary field values.
-    project = sg.find_one("Project", [["id", "is", project_id]], ["code", "name"])
+    project = sg.find_one(
+        "Project",
+        [["id", "is", project_id]],
+        ["code", "name"]
+    )
 
     # Return if we can't find the Project.
     if not project:
-        logger.debug("Could not find Project with id %s, skipping." % project_id)
+        logger.debug(
+            "Could not find Project with id %s, skipping." % project_id
+        )
         return
 
     # Re-query the Shot to get necessary field values.
     ticket = sg.find_one(
         "Ticket",
         [["id", "is", entity_id]],
-        [
-            "title",
-            "sg_ticket_type",
-            "sg_priority",
-            "description",
-            "created_by",
-            "sg_status_list",
-            "sg_ticket_type",
-            "addressings_cc",
-            "addressings_to",
-        ],
+        ["title", "sg_ticket_type", "sg_priority", "description",
+            "created_by", "sg_status_list", "sg_ticket_type",
+            "addressings_cc", "addressings_to"]
     )
 
     # Return if we can't find the Shot.
     if not ticket:
-        logger.debug("Could not find Ticket with id %s, skipping." % entity_id)
+        logger.debug(
+            "Could not find Ticket with id %s, skipping." % entity_id
+        )
         return
 
     # Return if the shot status already changed
     if not ticket[args["ticket_status_field"]] == event["meta"]["new_value"]:
         logger.debug(
-            'Tciekt status already no longer "%s", skipping.'
-            % event["meta"]["new_value"]
+            "Tciekt status already no longer \"%s\", skipping." % event["meta"]["new_value"]
         )
         return
 
     # Return if the Shot status is not in the query_statuses list.
-    if (
-        args.get("query_statuses")
-        and ticket[args["ticket_status_field"]] not in args["query_statuses"]
-    ):
-        logger.debug(
-            'Ignoring ticket %s, status "%s" is not of allowed type(s): %s.'
-            % (
-                ticket["id"],
-                ticket[args["ticket_status_field"]],
-                args["query_statuses"],
-            )
+    if args.get("query_statuses") \
+            and ticket[args["ticket_status_field"]] not in args["query_statuses"]:
+        logger.debug("Ignoring ticket %s, status \"%s\" is not of allowed type(s): %s." % (
+            ticket["id"],
+            ticket[args["ticket_status_field"]],
+            args["query_statuses"],
+        )
         )
         return
 
     new_status = sg.find_one(
-        "Status", [["code", "is", ticket.get("sg_status_list")]], ["name"]
+        "Status",
+        [["code", "is", ticket.get("sg_status_list")]],
+        ["name"]
     )["name"]
 
     # old_status = sg.find_one(
@@ -151,31 +154,29 @@ def ticket_status_alert(sg, logger, event, args):
     else:
         priority_color = "good"
 
-    attachments = [
-        {
-            # "pretext": "Ticket alert:",
-            "color": priority_color,
-            "title": "Status changed on Ticket #{}: {}".format(
-                ticket.get("id"), ticket.get("title")
-            ),
-            "title_link": "{}/detail/Ticket/{}".format(__SG_SITE, ticket.get("id")),
-            "author_name": ":writing_hand: {}".format(event.get("user")["name"]),
-            "author_link": "{}/detail/HumanUser/{}".format(
-                __SG_SITE, event.get("user")["id"]
-            ),
-            "fields": [
-                {"title": "Project", "value": project.get("name"), "short": True},
-                {"title": "New Status", "value": new_status, "short": True},
-            ],
-        }
-    ]
+    attachments = [{
+        # "pretext": "Ticket alert:",
+        "color": priority_color,
+        "title": "Status changed on Ticket #{}: {}".format(ticket.get("id"), ticket.get("title")),
+        "title_link": "{}/detail/Ticket/{}".format(__SG_SITE, ticket.get("id")),
+        "author_name": ":writing_hand: {}".format(event.get("user")["name"]),
+        "author_link": "{}/detail/HumanUser/{}".format(__SG_SITE, event.get("user")["id"]),
+        "fields": [
+            {
+                "title": "Project",
+                "value": project.get("name"),
+                "short": True
+            },
+            {
+                "title": "New Status",
+                "value": new_status,
+                "short": True
+            },
+        ]
+    }]
 
-    sg_users = (
-        ticket.get("addressings_to")
-        + ticket.get("addressings_cc")
-        + [ticket.get("created_by")]
-    )
-    sg_users = [i for n, i in enumerate(sg_users) if i not in sg_users[n + 1 :]]
+    sg_users = ticket.get("addressings_to") + ticket.get("addressings_cc") + [ticket.get("created_by")]
+    sg_users = [i for n, i in enumerate(sg_users) if i not in sg_users[n + 1:]]
     users = []
     for sg_user in sg_users:
         if sg_user == event.get("user"):
@@ -183,7 +184,11 @@ def ticket_status_alert(sg, logger, event, args):
         elif sg_user["type"] == "HumanUser":
             users.append(sg_user)
         elif sg_user["type"] == "Group":
-            group_users = sg.find_one("Group", [["id", "is", sg_user["id"]]], ["users"])
+            group_users = sg.find_one(
+                "Group",
+                [["id", "is", sg_user["id"]]],
+                ["users"]
+            )
             for group_user in group_users["users"]:
                 if group_user == event.get("user"):
                     pass
@@ -193,14 +198,8 @@ def ticket_status_alert(sg, logger, event, args):
     for user in users:
         slack_id = slack_shotgun_bot.get_slack_user_id(sg, user["id"])
         if slack_id:
-            slack_message = slack_shotgun_bot.send_message(
-                slack_id, None, attachments=attachments
-            )
+            slack_message = slack_shotgun_bot.send_message(slack_id, None, attachments=attachments)
             if slack_message["ok"]:
                 logger.info("Ticket status alert sent to {}.".format(user["name"]))
             elif slack_message["error"]:
-                logger.warning(
-                    "Ticket status alert to {} failed to send with error: {}".format(
-                        user["name"], slack_message["error"]
-                    )
-                )
+                logger.warning("Ticket status alert to {} failed to send with error: {}".format(user["name"], slack_message["error"]))
