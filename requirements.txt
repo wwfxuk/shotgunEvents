@@ -1,0 +1,4 @@
+slackclient
+schema
+git+git://github.com/shotgunsoftware/python-api.git
+-e .
