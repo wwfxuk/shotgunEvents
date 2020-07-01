@@ -88,7 +88,7 @@ def is_valid(sg, logger, args):
             % (args["entity_type"], e)
         )
 
-    for name, type_target in args_to_check.iteritems():
+    for name, type_target in args_to_check.items():
 
         # Grab the setting's value type.
         value_type = type(args[name])

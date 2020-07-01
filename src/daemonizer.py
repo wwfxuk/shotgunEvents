@@ -3,7 +3,7 @@
 # Taken and modified from:
 # http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 
-from __future__ import print_function
+
 import atexit
 import os
 import signal

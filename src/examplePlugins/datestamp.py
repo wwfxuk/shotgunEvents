@@ -155,7 +155,7 @@ def is_valid(sg, logger, args):
         "set_date_on_entity_creation": {"type": [bool], "allow_empty": False},
     }
 
-    for name, checks in args_to_check.iteritems():
+    for name, checks in args_to_check.items():
 
         # Grab the setting's value type.
         value_type = type(args[name])

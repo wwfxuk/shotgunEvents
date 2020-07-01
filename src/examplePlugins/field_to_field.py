@@ -71,7 +71,7 @@ def is_valid(sg, logger, args):
         "to_value": {"allow_empty": True},
     }
 
-    for name, checks in args_to_check.iteritems():
+    for name, checks in args_to_check.items():
 
         # Bail if we're missing any required args.
         try:

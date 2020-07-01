@@ -7,7 +7,7 @@
 
 # See docs folder for detailed usage info.
 
-from __future__ import division
+
 import os
 import shotgun_api3
 
@@ -170,7 +170,7 @@ def is_valid(sg, logger, args):
         )
         return
 
-    for name, checks in args_to_check.iteritems():
+    for name, checks in args_to_check.items():
 
         # Grab the setting's value type.
         value_type = type(args[name])

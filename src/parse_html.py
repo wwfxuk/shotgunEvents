@@ -1,6 +1,6 @@
-import HTMLParser
+import html.parser
 
-parser = HTMLParser.HTMLParser()
+parser = html.parser.HTMLParser()
 
 
 def parseHtml(text):

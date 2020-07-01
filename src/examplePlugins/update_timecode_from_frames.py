@@ -75,7 +75,7 @@ def is_valid(sg, logger, args):
         )
         return
 
-    for name, type_targets in args_to_check.iteritems():
+    for name, type_targets in args_to_check.items():
 
         # Grab the setting's value type.
         value_type = type(args[name]).__name__

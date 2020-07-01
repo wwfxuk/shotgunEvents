@@ -62,7 +62,7 @@ def is_valid(sg, logger, args):
         "author_is_artist": {"type": [bool], "allow_empty": False},
     }
 
-    for name, checks in args_to_check.iteritems():
+    for name, checks in args_to_check.items():
 
         # Bail if we're missing any required args.
         try:
