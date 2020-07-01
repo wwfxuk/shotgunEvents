@@ -1,4 +1,9 @@
-docs/_build/doctrees
-*.pyc
+/docs/_build/doctrees
+*.py[co]
 .idea
 .DS_Store
+
+/build/
+/dist/
+.egg-info
+*.egg-info
