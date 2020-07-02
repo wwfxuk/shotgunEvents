@@ -3,14 +3,52 @@
 
 """
 
+import collections.abc
 import os
 from pprint import pprint, pformat
 import textwrap
 
-import schema
+from schema import Schema, And, Or
 import shotgun_api3
 
 import slack_shotgun_bot
+
+STEP_FIELD = "task.Task.step.Step.code"
+
+SEARCH_FIELDS = [
+    STEP_FIELD,
+    "created_by",
+    "description",
+    "entity",
+    "image",
+    "name",
+    "path",
+    "published_file_type",
+    "version_number",
+]
+
+
+class Dict(Schema):
+    """Extend ``Schema`` to ignore other keys by default."""
+
+    def __init__(self, mapping, **kwargs):
+        """Constructor that passes through args and kwargs to parent."""
+        if isinstance(mapping, collections.abc.MutableMapping):
+            mapping.update({str: object})
+        super().__init__(mapping, **kwargs)
+
+
+SEND_RULES = {
+    Dict({STEP_FIELD: "Lighting"}): ["#compositing"],
+    Dict({STEP_FIELD: Or("Shot Sculpt", "Animation", "FX")}): ["#lighting",],
+    Dict(
+        {
+            STEP_FIELD: "Matchmove",
+            "published_file_type": Dict({"name": "Camera"}),
+            "path": Dict({"name": lambda n: n.endswith(".abc")}),
+        }
+    ): ["#anim", "#lighting"],
+}
 
 
 def registerCallbacks(reg):
@@ -26,13 +64,6 @@ def registerCallbacks(reg):
     script_name = os.environ["SG_SCRIPT_NAME"]
     api_key = os.environ["SG_SCRIPT_KEY"]
 
-    # User-defined plugin args, change at will.
-    args = {
-        "Lighting": ["#compositing"],
-        "Shot Sculpt": ["#lighting"],
-        "Matchmove": ["#anim", "#lighting"],
-    }
-
     # Grab an sg connection for the validator and bail if it fails.
     sg = shotgun_api3.Shotgun(server, script_name=script_name, api_key=api_key)
 
@@ -42,8 +73,8 @@ def registerCallbacks(reg):
         script_name,
         api_key,
         slack_notify_publish,
-        {"Shotgun_PublishedFile_New".format(**args): None},
-        args=args,
+        {"Shotgun_PublishedFile_New": None},
+        args=SEND_RULES,
     )
     reg.logger.debug("Registered callback %s", slack_notify_publish)
 
@@ -106,26 +137,16 @@ def create_slack_publish_payload(channel, published_file):
 def slack_notify_publish(sg, logger, event, args):
     """
     """
-    step_field = "task.Task.step.Step.code"
     published_file = sg.find_one(
         event["entity"]["type"],
         [["id", "is", event["entity"]["id"]]],
-        fields=[
-            step_field,
-            "created_by",
-            "description",
-            "image",
-            "name",
-            "path",
-            "version_number",
-        ],
+        fields=SEARCH_FIELDS,
     )
     pprint(published_file)
-    publish_step_name = published_file.get(step_field)
 
-    for step_name, channels in args.items():
-        if publish_step_name == step_name:
+    for rule, channels in args.items():
+        if rule.is_valid(published_file):
             for channel in channels:
                 message = create_slack_publish_payload(channel, published_file)
                 pprint(message)
-                slack_shotgun_bot.SC_USER.chat_postMessage(**message)
+                pprint(slack_shotgun_bot.SC_USER.chat_postMessage(**message))
