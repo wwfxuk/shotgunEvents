@@ -98,6 +98,11 @@ def create_slack_publish_payload(channel, published_file):
     version = published_file.get("version_number") or "_No Version_"
     image = published_file.get("image") or ""
 
+    entity = published_file.get("entity", {}).get("name")
+    entity = f"for *{entity}* " if entity else ""
+    step = published_file.get(STEP_FIELD)
+    step = f"from *{step}* " if step else ""
+
     paths = """
     ```
     {path[local_path_linux]}
@@ -110,7 +115,8 @@ def create_slack_publish_payload(channel, published_file):
     )
 
     message = f"""
-    {publish} version `{version}` by {author}
+    {publish} version `{version}`
+    {step}{entity}by {author}
     > {description}
     {paths}
     """
