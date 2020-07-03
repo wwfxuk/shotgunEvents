@@ -28,8 +28,45 @@ class KnownUsers(collections.abc.MutableSet):
     def __len__(self, *args, **kwargs):
         return self._ids_set.__len__(*args, **kwargs)
 
-    def refresh(self, sg):
-        """Clear and re-assign all Slack and Shotgun ID mappings."""
+    def refresh(self, shotgun):
+        """Clear and re-assign all Slack and Shotgun ID mappings.
+
+        Requires Slack app permissions (OAuth Scopes):
+        - ``user.profile:read``
+        - ``users:read``
+        - ``users:read.email``
+        """
+        self.clear()
+        query = [
+            ["sg_status_list", "is", "act"],
+            ["name", "is_not", "Template User"],
+            ["name", "is_not", "Shotgun Support"],
+        ]
+        fields = ["email", "login", "name"]
+        sg_people = shotgun.find("HumanUser", query, fields=fields)
+        slack_people = {
+            member["id"]: dict(member["profile"].items(), name=member["name"])
+            for member in SC_BOT.users_list().data["members"]
+            if not (member["is_bot"] or member["deleted"])
+        }
+        def get(mapping, key):
+            return str(mapping.get(key) or "").lower()
+
+        for slack_id, profile in slack_people.items():
+            for sg_user in sg_people:
+                sg_id = sg_user["id"]
+                matched = (
+                    get(sg_user, "email") == get(profile, "email")
+                    or get(sg_user, "login") == get(profile, "name")
+                    or get(sg_user, "name") in [
+                        get(profile, "display_name"),
+                        get(profile, "real_name"),
+                    ]
+                )
+                if matched and self.slack_of(sg_id) is None:
+                    self.add(slack_id, sg_id)
+                    break
+
 
     def sg_of(self, slack_id: str, default=None) -> int:
         """Get Shotgun HumanUser ID for a given Slack ID."""
@@ -171,31 +208,7 @@ def invite_to_workspace(email, channels=None):
     return invite
 
 
-def get_slack_user_id(sg, shotgun_id):
-    """
-    Looks up the shotgun user in slack by matching email address
-    and returns the slack user ID.
-
-    :param sg: A shotgun connection instance.
-    :param shotgun_id: The shotgun user ID.
-    """
-
-    sg_user = sg.find_one(
-        "HumanUser", [["id", "is", shotgun_id]], ["email", "sg_slack_id"]
-    )
-
-    # if users slack ID is in thier shotgun record, just return that
-    if sg_user["sg_slack_id"]:
-        return sg_user["sg_slack_id"]
-    # otherwise, look up the slack user by matching email
-    else:
-        slack_user = SC_BOT.api_call("users.lookupByEmail", email=sg_user["email"])
-
-        # if a slack user is found, return the ID and record it
-        # in the users shotgun record so we dont query slack next time
-        if slack_user["ok"]:
-            slack_id = slack_user["user"]["id"]
-            sg.update("HumanUser", shotgun_id, {"sg_slack_id": slack_id})
-            return slack_id
-        else:
-            return None
+def get_slack_user_id(sg, shotgun_id, refresh=False):
+    if refresh or not KNOWN_USERS:
+        KNOWN_USERS.refresh(sg)
+    return KNOWN_USERS.slack_of(shotgun_id)
