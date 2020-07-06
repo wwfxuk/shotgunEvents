@@ -68,11 +68,7 @@ def registerCallbacks(reg):
 
     # Register our function with the dameon, and pass in our args.
     reg.registerCallback(
-        script_name,
-        script_key,
-        entity_status_update_task_status,
-        eventFilter,
-        args,
+        script_name, script_key, entity_status_update_task_status, eventFilter, args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -90,36 +86,35 @@ def is_valid(sg, logger, args):
     # Make sure args["entity_status_field"] is still in our entity schema.
     try:
         entity_schema = sg.schema_field_read(
-            args["entity_type"],
-            field_name=args["entity_status_field"],
+            args["entity_type"], field_name=args["entity_status_field"],
         )
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "%s does not exist in %s schema, skipping: %s" % (
-                args["entity_status_field"],
-                args["entity_type"],
-                e.message,
-            )
+            "%s does not exist in %s schema, skipping: %s"
+            % (args["entity_status_field"], args["entity_type"], e.message,)
         )
         return
 
     # Make sure args["target_status"] is in the entity schema.
-    if args["target_status"] not in entity_schema["sg_status_list"]["properties"]["valid_values"]["value"]:
+    if (
+        args["target_status"]
+        not in entity_schema["sg_status_list"]["properties"]["valid_values"]["value"]
+    ):
         logger.warning(
-            "%s is not in %s schema, plugin will never execute." % (
-                args["target_status"],
-                args["entity_type"],
-            )
+            "%s is not in %s schema, plugin will never execute."
+            % (args["target_status"], args["entity_type"],)
         )
         return
 
     # Make sure the Task schema has an args["target_status"] field.
-    task_schema = sg.schema_field_read(
-        "Task",
-        field_name="sg_status_list",
-    )
-    if args["target_status"] not in task_schema["sg_status_list"]["properties"]["valid_values"]["value"]:
-        logger.warning("%s is not in Task schema, plugin will never execute." % args["task_status"])
+    task_schema = sg.schema_field_read("Task", field_name="sg_status_list",)
+    if (
+        args["target_status"]
+        not in task_schema["sg_status_list"]["properties"]["valid_values"]["value"]
+    ):
+        logger.warning(
+            "%s is not in Task schema, plugin will never execute." % args["task_status"]
+        )
         return
 
     return True
@@ -154,15 +149,13 @@ def entity_status_update_task_status(sg, logger, event, args):
 
     # Bail if new_value isn't what we're looking for.
     if not new_value == args["target_status"]:
-        logger.debug("new_value is %s, not %s, skipping." % (new_value, args["target_status"]))
+        logger.debug(
+            "new_value is %s, not %s, skipping." % (new_value, args["target_status"])
+        )
         return
 
     # Make sure the event exists in Shotgun.
-    sg_event = sg.find_one(
-        "EventLogEntry",
-        [["id", "is", event_id]],
-        ["description"],
-    )
+    sg_event = sg.find_one("EventLogEntry", [["id", "is", event_id]], ["description"],)
     if not sg_event:
         logger.warning("Could not find event with id %s, skipping." % event_id)
         return
@@ -172,30 +165,21 @@ def entity_status_update_task_status(sg, logger, event, args):
 
     # Re-query our entity for updated field values.
     entity = sg.find_one(
-        entity["type"],
-        [["id", "is", entity["id"]]],
-        [field_name, "description"],
+        entity["type"], [["id", "is", entity["id"]]], [field_name, "description"],
     )
 
     # Bail if our entity doesn't exist.
     if not entity:
         logger.warning(
-            "%s with id %s does not exist, skipping." % (
-                entity["type"],
-                entity["id"],
-            )
+            "%s with id %s does not exist, skipping." % (entity["type"], entity["id"],)
         )
         return
 
     # Bail if our entity's field value has changed (is not new_value).
     if not entity[field_name] == new_value:
         logger.warning(
-            "%s with id %s's %s has changed from %s since event inception." % (
-                entity["type"],
-                entity["id"],
-                field_name,
-                new_value,
-            )
+            "%s with id %s's %s has changed from %s since event inception."
+            % (entity["type"], entity["id"], field_name, new_value,)
         )
         return
 
@@ -213,21 +197,14 @@ def entity_status_update_task_status(sg, logger, event, args):
                 "entity_type": entity["type"],
                 "entity_id": entity["id"],
                 "data": {
-                    "description": "%s set this %s to %s." % (
-                        user["name"],
-                        entity["type"],
-                        args["target_status"],
-                    )
-                }
+                    "description": "%s set this %s to %s."
+                    % (user["name"], entity["type"], args["target_status"],)
+                },
             }
         )
 
     # Find all the Tasks linked to our entity.
-    tasks = sg.find(
-        "Task",
-        [["entity", "is", entity]],
-        ["sg_status_list"],
-    )
+    tasks = sg.find("Task", [["entity", "is", entity]], ["sg_status_list"],)
 
     # Cue up a change to all our Tasks. Set them to args["target_status"].
     for task in tasks:
@@ -244,7 +221,8 @@ def entity_status_update_task_status(sg, logger, event, args):
 
     # Run the API batch command and tell the logger about it.
     logger.info(
-        "Running batch API command to update the following: %s..." % ", ".join(update_message)
+        "Running batch API command to update the following: %s..."
+        % ", ".join(update_message)
     )
     sg.batch(batch_data)
     logger.info("Done.")

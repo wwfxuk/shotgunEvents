@@ -17,7 +17,7 @@ or not an existing value in `date_field` is overwritten.
 
 ## Notes
 
-If you'd like the plugin to only fire on entity creation, set either the 
+If you'd like the plugin to only fire on entity creation, set either the
 `status_field` or `statuses` arg to `""` or `[]` respectively.
 
 ## Args

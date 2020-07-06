@@ -29,28 +29,18 @@ def registerCallbacks(reg):
         "matched_task_step_value": ["ART"],
     }
 
-    task_event_filter = {
-        "Shotgun_Task_Change": [args["matched_task_field"], "step"]
-    }
+    task_event_filter = {"Shotgun_Task_Change": [args["matched_task_field"], "step"]}
 
     version_event_filter = {
         "Shotgun_Version_Change": ["entity", args["matched_version_field"]]
     }
 
     reg.registerCallback(
-        script_name,
-        script_key,
-        find_task_versions,
-        task_event_filter,
-        args,
+        script_name, script_key, find_task_versions, task_event_filter, args,
     )
 
     reg.registerCallback(
-        script_name,
-        script_key,
-        update_version_task_field,
-        version_event_filter,
-        args,
+        script_name, script_key, update_version_task_field, version_event_filter, args,
     )
     reg.logger.debug("Registered callbacks.")
 
@@ -75,25 +65,14 @@ def find_task_versions(sg, logger, event, args):
     entity_id = event["meta"]["entity_id"]
 
     # Re-query our Task to get the linked Shot.
-    task = sg.find_one(
-        "Task",
-        [["id", "is", entity_id]],
-        ["entity"],
-    )
+    task = sg.find_one("Task", [["id", "is", entity_id]], ["entity"],)
 
     # Get all Versions linked to the same Shot as our Task.
-    versions = sg.find(
-        "Version",
-        [["entity", "is", task["entity"]]],
-    )
+    versions = sg.find("Version", [["entity", "is", task["entity"]]],)
 
     # If a Version is linked to our Task, run the trigger on it.
     for version in versions:
-        fake_event = {
-            "meta": {
-                "entity_id": version["id"],
-            }
-        }
+        fake_event = {"meta": {"entity_id": version["id"],}}
         update_version_task_field(sg, logger, fake_event, args)
 
 
@@ -130,7 +109,12 @@ def update_version_task_field(sg, logger, event, args):
     version = sg.find_one(
         "Version",
         [["id", "is", entity_id]],
-        ["entity", "entity.Shot.sg_shot_type", args["matched_version_field"], "project"],
+        [
+            "entity",
+            "entity.Shot.sg_shot_type",
+            args["matched_version_field"],
+            "project",
+        ],
     )
 
     # Return if we are missing necessary field data.
@@ -142,10 +126,8 @@ def update_version_task_field(sg, logger, event, args):
         return
     elif not version[args["matched_version_field"]]:
         logger.debug(
-            "Version %s not linked to %s field, skipping." % (
-                entity_id,
-                args["matched_version_field"]
-            )
+            "Version %s not linked to %s field, skipping."
+            % (entity_id, args["matched_version_field"])
         )
         return
     elif not version["project"]:
@@ -164,24 +146,20 @@ def update_version_task_field(sg, logger, event, args):
             ["entity", "is", version["entity"]],
             [args["matched_task_field"], "is", version[args["matched_version_field"]]],
             ["project", "is", version["project"]],
-            step_filter
+            step_filter,
         ],
     )
 
     # Return if our linked Task doesn't exist.
     if not linked_task:
         logger.debug(
-            "No Task attached to Version with linked entity %s and %s field value, Skipping." % (
-                entity_id,
-                args["matched_version_field"],
-                )
-            )
+            "No Task attached to Version with linked entity %s and %s field value, Skipping."
+            % (entity_id, args["matched_version_field"],)
+        )
         return
 
     # Update our Version with the linked Task.
     sg.update(
-        "Version",
-        entity_id,
-        {"sg_task": linked_task},
+        "Version", entity_id, {"sg_task": linked_task},
     )
-    logger.debug("Updated \"sg_task\" for Version with id %s" % entity_id)
+    logger.debug('Updated "sg_task" for Version with id %s' % entity_id)

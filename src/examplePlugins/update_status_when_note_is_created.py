@@ -26,7 +26,7 @@ def registerCallbacks(reg):
         "entity_type": "Version",
         "status_field": "sg_status_list",
         "trigger_statuses": ["rev"],
-        "new_status": "vwd"
+        "new_status": "vwd",
     }
 
     reg.registerCallback(
@@ -58,11 +58,7 @@ def update_status_when_note_is_created(sg, logger, event, args):
     note_id = event["meta"]["entity_id"]
 
     # Re-query our Note for additional field values.
-    note = sg.find_one(
-        "Note",
-        [["id", "is", note_id]],
-        ["note_links"],
-    )
+    note = sg.find_one("Note", [["id", "is", note_id]], ["note_links"],)
 
     # Return if the Note doesn't exist.
     if not note:
@@ -78,7 +74,8 @@ def update_status_when_note_is_created(sg, logger, event, args):
     # Return if no linked entities were found.
     if not linked_entities:
         logger.debug(
-            "No %ss linked to Note with id %s, skipping." % (args["entity_type"], note_id)
+            "No %ss linked to Note with id %s, skipping."
+            % (args["entity_type"], note_id)
         )
         return
 
@@ -98,31 +95,28 @@ def update_status_when_note_is_created(sg, logger, event, args):
         # Continue if the entity is not found.
         if not entity:
             logger.debug(
-                "Could not find linked %s with id %s, skipping." % (
-                    args["entity_type"],
-                    entity["id"],
-                )
+                "Could not find linked %s with id %s, skipping."
+                % (args["entity_type"], entity["id"],)
             )
             continue
 
         # Only update if the Status of the entity is new_status_value.
         if entity[args["status_field"]] not in args["trigger_statuses"]:
             logger.debug(
-                "Linked %s with id %s does not have a status of %s, skipping update." % (
-                    args["entity_type"],
-                    entity["id"],
-                    args["trigger_statuses"],
-                )
+                "Linked %s with id %s does not have a status of %s, skipping update."
+                % (args["entity_type"], entity["id"], args["trigger_statuses"],)
             )
             continue
 
         # Add our update request to the batch_data list.
-        batch_data.append({
-            "request_type": "update",
-            "entity_type": args["entity_type"],
-            "entity_id": entity["id"],
-            "data": {args["status_field"]: args["new_status"]},
-        })
+        batch_data.append(
+            {
+                "request_type": "update",
+                "entity_type": args["entity_type"],
+                "entity_id": entity["id"],
+                "data": {args["status_field"]: args["new_status"]},
+            }
+        )
 
     # Send the Shotgun API batch request if we have stuff to update.
     if batch_data:

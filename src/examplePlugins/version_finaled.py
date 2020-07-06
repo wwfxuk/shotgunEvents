@@ -35,7 +35,7 @@ def registerCallbacks(reg):
         "version_date_field": "client_approved_at",
         "target_date_field": "",
         "linked_version_field": "",
-        "timezone": "America/New_York"
+        "timezone": "America/New_York",
     }
 
     # Grab an sg connection for the validator.
@@ -89,20 +89,22 @@ def version_finaled(sg, logger, event, args):
     version = sg.find_one(
         "Version",
         [["id", "is", entity_id]],
-        ["code", "entity", args["version_status_field"]]
+        ["code", "entity", args["version_status_field"]],
     )
 
     # Return if we can't find the Version.
     if not version:
-        logger.debug(
-            "Could not find Version with id %s, skipping." % entity_id
-        )
+        logger.debug("Could not find Version with id %s, skipping." % entity_id)
         return
 
     # Return if the Version status is not in the query_statuses list.
-    if args.get("query_statuses") \
-        and version[args["version_status_field"]] not in args["query_statuses"]:
-        logger.debug("Ignoring %s, status \"%s\" is not of allowed type(s): %s." % (
+    if (
+        args.get("query_statuses")
+        and version[args["version_status_field"]] not in args["query_statuses"]
+    ):
+        logger.debug(
+            'Ignoring %s, status "%s" is not of allowed type(s): %s.'
+            % (
                 version["code"],
                 version[args["version_status_field"]],
                 args["query_statuses"],
@@ -111,14 +113,17 @@ def version_finaled(sg, logger, event, args):
         return
 
     # Return if the Version isn't linked to an entity of target_entity_type.
-    if not version.get("entity") \
-        or not version["entity"].get("name") \
-        or not version["entity"].get("id") \
-        or version["entity"].get("type") != args["target_entity_type"]:
-            logger.debug(
-                "Ignoring %s, not linked to a %s." % (version.get("code"), args["target_entity_type"])
-            )
-            return
+    if (
+        not version.get("entity")
+        or not version["entity"].get("name")
+        or not version["entity"].get("id")
+        or version["entity"].get("type") != args["target_entity_type"]
+    ):
+        logger.debug(
+            "Ignoring %s, not linked to a %s."
+            % (version.get("code"), args["target_entity_type"])
+        )
+        return
 
     # Gather the date or timestamp data appropriate for the date field types of
     # both the Version and target entity.
@@ -152,65 +157,81 @@ def version_finaled(sg, logger, event, args):
     # Assemble our Version update data based on what's available.
     data = {}
     if args.get("target_status_field"):
-        data["entity.%s.%s" % (
-            args["target_entity_type"], args["target_status_field"])] = target_status
+        data[
+            "entity.%s.%s" % (args["target_entity_type"], args["target_status_field"])
+        ] = target_status
     if version_date_or_timestamp:
         data[args["version_date_field"]] = version_date_or_timestamp
     if target_date_or_timestamp:
-        data["entity.%s.%s" % (
-            args["target_entity_type"], args["target_date_field"])] = target_date_or_timestamp
+        data[
+            "entity.%s.%s" % (args["target_entity_type"], args["target_date_field"])
+        ] = target_date_or_timestamp
 
     # Update the Version.
     if data:
-        batch_data.append({
-            "request_type": "update",
-            "entity_type": "Version",
-            "entity_id": version["id"],
-            "data": data,
-        })
+        batch_data.append(
+            {
+                "request_type": "update",
+                "entity_type": "Version",
+                "entity_id": version["id"],
+                "data": data,
+            }
+        )
 
     # Update the target entity.
     # Note: it is not possible to update a linked entity field from the entity
     # it is being linked to, otherwise we could do this from the Version.
     if args.get("linked_version_field"):
-        batch_data.append({
-            "request_type": "update",
-            "entity_type": args["target_entity_type"],
-            "entity_id": version["entity"]["id"],
-            "data": {
-                args["linked_version_field"]: {"type": "Version", "id": version.get("id")}
-            },
-        })
+        batch_data.append(
+            {
+                "request_type": "update",
+                "entity_type": args["target_entity_type"],
+                "entity_id": version["entity"]["id"],
+                "data": {
+                    args["linked_version_field"]: {
+                        "type": "Version",
+                        "id": version.get("id"),
+                    }
+                },
+            }
+        )
 
     # Find all other Versions linked to the target entity and update their
     # statuses, if a superseded_status value has been set and it is not in the
     # query_statuses list (otherwise we'd end up in an infinite loop).
-    if args.get("superseded_status") \
-    and not args["superseded_status"] in args.get("query_statuses"):
+    if args.get("superseded_status") and not args["superseded_status"] in args.get(
+        "query_statuses"
+    ):
         other_versions = sg.find(
             "Version",
-            [
-                ["entity", "is", version["entity"]],
-                ["id", "is_not", version["id"]]
-            ],
+            [["entity", "is", version["entity"]], ["id", "is_not", version["id"]]],
             [args["version_status_field"], args["version_date_field"]],
         )
         if other_versions:
             for other_version in other_versions:
-                if args.get("query_statuses") \
-                and other_version[args["version_status_field"]] in args["query_statuses"]:
+                if (
+                    args.get("query_statuses")
+                    and other_version[args["version_status_field"]]
+                    in args["query_statuses"]
+                ):
                     update_dict = {
                         args["version_status_field"]: args["superseded_status"]
                     }
-                    if version_date_or_timestamp \
-                    and not other_version[args["version_date_field"]]:
-                        update_dict[args["version_date_field"]] = version_date_or_timestamp
-                    batch_data.append({
-                        "request_type": "update",
-                        "entity_type": "Version",
-                        "entity_id": other_version["id"],
-                        "data": update_dict,
-                    })
+                    if (
+                        version_date_or_timestamp
+                        and not other_version[args["version_date_field"]]
+                    ):
+                        update_dict[
+                            args["version_date_field"]
+                        ] = version_date_or_timestamp
+                    batch_data.append(
+                        {
+                            "request_type": "update",
+                            "entity_type": "Version",
+                            "entity_id": other_version["id"],
+                            "data": update_dict,
+                        }
+                    )
 
     # If we have something to do, then do it.
     if batch_data:
@@ -218,7 +239,8 @@ def version_finaled(sg, logger, event, args):
 
         # Tell the logger which target entity and Version was updated.
         logger.info(
-            "Updated %s %s (%s) and Version %s (%s)." % (
+            "Updated %s %s (%s) and Version %s (%s)."
+            % (
                 args["target_entity_type"],
                 version["entity"]["name"],
                 version["entity"]["id"],
@@ -246,10 +268,9 @@ def get_date_or_timestamp(logger, sg, event, entity_type, date_field, timezone):
 
     # Determine the date field type of date_field.
     if date_field and timezone:
-        date_field_type = sg.schema_field_read(
-            entity_type,
-            date_field,
-        )[date_field]["data_type"]["value"]
+        date_field_type = sg.schema_field_read(entity_type, date_field,)[date_field][
+            "data_type"
+        ]["value"]
 
         # Set the date var type based on the field type.
         date_or_timestamp = event["created_at"].astimezone(pytz.timezone(timezone))

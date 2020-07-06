@@ -52,10 +52,12 @@ def version_status_changed(sg, logger, event, args):
     """
 
     # Return if we don't have all the field values we need.
-    if (not event.get("entity", {}).get("id") or
-        not event.get("entity", {}).get("name") or
-        not event.get("id")):
-            return
+    if (
+        not event.get("entity", {}).get("id")
+        or not event.get("entity", {}).get("name")
+        or not event.get("id")
+    ):
+        return
 
     # Make some vars for convenience.
     entity_id = event["entity"]["id"]
@@ -68,11 +70,12 @@ def version_status_changed(sg, logger, event, args):
     sg_version = sg.find_one(
         "Version",
         [["id", "is", entity_id]],
-        ["sg_task", "entity", "sg_status_list", "sg_task.Task.sg_status_list"]
+        ["sg_task", "entity", "sg_status_list", "sg_task.Task.sg_status_list"],
     )
     if not sg_version:
-        logger.info("Unable to retrieve Version (%d) %s from SG for event %d!" % (
-            entity_id, entity_name, event["id"])
+        logger.info(
+            "Unable to retrieve Version (%d) %s from SG for event %d!"
+            % (entity_id, entity_name, event["id"])
         )
         return
 
@@ -89,20 +92,24 @@ def version_status_changed(sg, logger, event, args):
             sg_status = sg.find_one(
                 "Status",
                 [["code", "is", new_version_status]],
-                ["sg_task_status_mapping"]
+                ["sg_task_status_mapping"],
             )
             new_task_status = sg_status.get("sg_task_status_mapping")
-            logger.debug("Status [%s] Task Status mapping: %s" % (new_version_status, new_task_status))
-            logger.debug("Task current status: %s" % sg_version["sg_task.Task.sg_status_list"])
+            logger.debug(
+                "Status [%s] Task Status mapping: %s"
+                % (new_version_status, new_task_status)
+            )
+            logger.debug(
+                "Task current status: %s" % sg_version["sg_task.Task.sg_status_list"]
+            )
 
             if new_task_status and new_task_status != cur_task_status:
                 # Verify the new Task status is a valid Task status.  We need to check
                 # this here rather than before we register the plugin because the
                 # sg_task_status_mapping value can be changed at any time.
-                task_status_list = sg.schema_field_read(
-                    "Task",
+                task_status_list = sg.schema_field_read("Task", "sg_status_list")[
                     "sg_status_list"
-                )["sg_status_list"]["properties"]["valid_values"]["value"]
+                ]["properties"]["valid_values"]["value"]
 
                 if new_task_status not in task_status_list:
                     logger.info("Invalid Task status detected: %s" % new_task_status)
@@ -114,12 +121,14 @@ def version_status_changed(sg, logger, event, args):
         if new_task_status and new_task_status != cur_task_status:
             # Update the linked Task's status to the value resolved from
             # Version.sg_status_list.Status.sg_task_status_mapping
-            batch_cmds.append({
-                "request_type": "update",
-                "entity_type": sg_version["sg_task"]["type"],
-                "entity_id": sg_version["sg_task"]["id"],
-                "data": {"sg_status_list": new_task_status}
-            })
+            batch_cmds.append(
+                {
+                    "request_type": "update",
+                    "entity_type": sg_version["sg_task"]["type"],
+                    "entity_id": sg_version["sg_task"]["id"],
+                    "data": {"sg_status_list": new_task_status},
+                }
+            )
 
     # Check for input Version status changed to the Approved status
     if new_version_status == args["approved_status_code"]:
@@ -132,27 +141,27 @@ def version_status_changed(sg, logger, event, args):
         # there's also a possibility the sg_date_approved field is a date instead
         # of a datetime, check that in the schema
         date_approved_field_type = sg.schema_field_read(
-            "Version",
-            args["date_approved_field"],
+            "Version", args["date_approved_field"],
         )[args["date_approved_field"]]["data_type"]["value"]
         # if the field type is date, update the var accordingly
         if date_approved_field_type == "date":
             approved_date = approved_date.date()
 
         logger.debug("Setting Date Approved value to: %s" % approved_date)
-        batch_cmds.append({
-            "request_type": "update",
-            "entity_type": "Version",
-            "entity_id": entity_id,
-            "data": {
-                args["date_approved_field"]: approved_date,
+        batch_cmds.append(
+            {
+                "request_type": "update",
+                "entity_type": "Version",
+                "entity_id": entity_id,
+                "data": {args["date_approved_field"]: approved_date,},
             }
-        })
+        )
 
     if batch_cmds:
         # Execute the batch command(s)
-        logger.info("Running [%d] batch command(s) to update Version and Task values ..." % (
-            len(batch_cmds))
+        logger.info(
+            "Running [%d] batch command(s) to update Version and Task values ..."
+            % (len(batch_cmds))
         )
         [logger.debug("    %s" % bc) for bc in batch_cmds]
         results = sg.batch(batch_cmds)

@@ -33,10 +33,7 @@ def registerCallbacks(reg):
     # that field will have been removed.
     args = {
         "field_to_update": "sg_description",
-        "link_fields": {
-            "Asset": "project",
-            "Shot": "project",
-        },
+        "link_fields": {"Asset": "project", "Shot": "project",},
         "summarize": [
             {
                 "entity_type": "Asset",
@@ -52,7 +49,7 @@ def registerCallbacks(reg):
                 "operator": "+",
                 "filters": [],
             },
-        ]
+        ],
     }
 
     # Grab an sg connection for the validator.
@@ -68,16 +65,14 @@ def registerCallbacks(reg):
 
     # Add any entity_type/field combos that exist in the summarize list.
     for summary_item in args["summarize"]:
-        event_filters["Shotgun_%s_Change" % summary_item["entity_type"]] = summary_item["field"]
+        event_filters["Shotgun_%s_Change" % summary_item["entity_type"]] = summary_item[
+            "field"
+        ]
 
     # Register our callback with the Shotgun_%s_Change event and tell the logger
     # about it.
     reg.registerCallback(
-        script_name,
-        script_key,
-        calculate_summaries,
-        event_filters,
-        args,
+        script_name, script_key, calculate_summaries, event_filters, args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -108,20 +103,16 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the setting has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "\"%s\" setting's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                '"%s" setting\'s value is empty but requires a value, please fix.'
+                % (name,)
             )
             return
 
@@ -135,7 +126,7 @@ def is_valid(sg, logger, args):
         # Make sure the sum_or_count setting is okay.
         if summary_item["sum_or_count"] not in ["sum", "count"]:
             logger.warning(
-                "\"sum_or_count\" setting must be either \"sum\" or \"count,\" please fix."
+                '"sum_or_count" setting must be either "sum" or "count," please fix.'
             )
             return
 
@@ -147,10 +138,7 @@ def is_valid(sg, logger, args):
 
         # Make sure the field we want to summarize is on our entity.
         if not check_entity_schema(
-            sg,
-            summary_item["entity_type"],
-            summary_item["field"],
-            valid_fields,
+            sg, summary_item["entity_type"], summary_item["field"], valid_fields,
         ):
             return
 
@@ -158,21 +146,20 @@ def is_valid(sg, logger, args):
         operators = ["+", "-", "*", "/"]
         if summary_item["operator"] not in operators:
             logger.warning(
-                "\"operator\" setting must be of type %s, please fix." % operators
+                '"operator" setting must be of type %s, please fix.' % operators
             )
             return
 
         # Make sure our filters argument is a list.
         if type(summary_item["filters"]).__name__ != "list":
-            logger.warning(
-                "\"filters\" value must be a list, please fix."
-            )
+            logger.warning('"filters" value must be a list, please fix.')
             return
 
         # Make sure our entity type has a link field setting.
         if summary_item["entity_type"] not in args["link_fields"].keys():
             logger.warning(
-                "%s is not defined in the \"link_fields\" setting, please fix." % summary_item["entity_type"]
+                '%s is not defined in the "link_fields" setting, please fix.'
+                % summary_item["entity_type"]
             )
             return
 
@@ -188,7 +175,8 @@ def is_valid(sg, logger, args):
         # Bail if we don't have a single-entity field.
         if data_type != "entity":
             logger.warning(
-                "%s's \"%s\" field should be \"entity\" data type, found \"%s\", please fix." % (
+                '%s\'s "%s" field should be "entity" data type, found "%s", please fix.'
+                % (
                     summary_item["entity_type"],
                     args["link_fields"][summary_item["entity_type"]],
                     data_type,
@@ -197,7 +185,9 @@ def is_valid(sg, logger, args):
             return
 
         # Get the valid entity types for the linked field.
-        entity_links = link_field_schema[link_field_schema.keys()[0]]["properties"]["valid_types"]["value"]
+        entity_links = link_field_schema[link_field_schema.keys()[0]]["properties"][
+            "valid_types"
+        ]["value"]
 
         # Bail if we have more than one valid type. Things get a bit crazy if we
         # have to check for fields on more than one entity type that may or may
@@ -207,7 +197,8 @@ def is_valid(sg, logger, args):
         # make mistakes in the Django args.
         if len(entity_links) > 1:
             logger.warning(
-                "%s's \"%s\" field should only accept one entity type, found %s, please fix." % (
+                '%s\'s "%s" field should only accept one entity type, found %s, please fix.'
+                % (
                     summary_item["entity_type"],
                     args["link_fields"][summary_item["entity_type"]],
                     entity_links,
@@ -222,7 +213,8 @@ def is_valid(sg, logger, args):
         if summarize_entity_type:
             if summarize_entity_type != found_entity_type:
                 logger.warning(
-                    "\"link_fields\" setting contains entity links that reference different entity types (%s vs %s), please fix." % (summarize_entity_type, found_entity_type)
+                    '"link_fields" setting contains entity links that reference different entity types (%s vs %s), please fix.'
+                    % (summarize_entity_type, found_entity_type)
                 )
                 return
         else:
@@ -253,12 +245,9 @@ def check_entity_schema(sg, entity_type, field_name, field_type=None):
     # Make sure we can read the schema.
     try:
         entity_schema = sg.schema_field_read(entity_type)
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for entity \"%s\": %s" % (
-                entity_type,
-                e
-            )
+            'Can\'t read Shotgun schema for entity "%s": %s' % (entity_type, e)
         )
         return
 
@@ -269,21 +258,16 @@ def check_entity_schema(sg, entity_type, field_name, field_type=None):
     # was found.
     if not sg_type:
         logger.warning(
-            "%s entity field \"%s\" does not exist in Shotgun, please fix." % (
-                entity_type,
-                field_name,
-            )
+            '%s entity field "%s" does not exist in Shotgun, please fix.'
+            % (entity_type, field_name,)
         )
         return
 
     # Make sure the field is the correct Shotgun type.
     if field_type and sg_type not in field_type:
         logger.warning(
-            "Shotgun field \"%s\" is type \"%s\" but should be of type(s) %s, please fix." % (
-                field_name,
-                sg_type,
-                field_type
-            )
+            'Shotgun field "%s" is type "%s" but should be of type(s) %s, please fix.'
+            % (field_name, sg_type, field_type)
         )
         return
 
@@ -303,8 +287,9 @@ def calculate_summaries(sg, logger, event, args):
     """
 
     # Return if we don't have all the event values we need.
-    if not event.get("meta", {}).get("entity_type") \
-    or not event["meta"].get("entity_id"):
+    if not event.get("meta", {}).get("entity_type") or not event["meta"].get(
+        "entity_id"
+    ):
         logger.warning("Missing event details, skipping.")
         return
 
@@ -315,18 +300,13 @@ def calculate_summaries(sg, logger, event, args):
 
     # Re-query the entity.
     event_entity = sg.find_one(
-        entity_type,
-        [["id", "is", entity_id]],
-        [link_fields[entity_type]],
+        entity_type, [["id", "is", entity_id]], [link_fields[entity_type]],
     )
 
     # Bail if the entity no longer exists.
     if not event_entity:
         logger.warning(
-            "%s with id %s no longer exists, skipping." % (
-                entity_type,
-                entity_id,
-            )
+            "%s with id %s no longer exists, skipping." % (entity_type, entity_id,)
         )
         return
 
@@ -341,9 +321,8 @@ def calculate_summaries(sg, logger, event, args):
         # Grab the field values on all relevant entities.
         entities = sg.find(
             summary_item["entity_type"],
-            summary_item["filters"] + [
-                [link_fields[summary_item["entity_type"]], "is", summarize_entity]
-            ],
+            summary_item["filters"]
+            + [[link_fields[summary_item["entity_type"]], "is", summarize_entity]],
             [summary_item["field"]],
         )
 
@@ -373,16 +352,17 @@ def calculate_summaries(sg, logger, event, args):
 
     # Grab the summary entity's field_to_update data type.
     summarize_entity_schema = sg.schema_field_read(summarize_entity["type"])
-    field_type = summarize_entity_schema.get(
-        args["field_to_update"], {}).get("data_type", {}).get("value")
+    field_type = (
+        summarize_entity_schema.get(args["field_to_update"], {})
+        .get("data_type", {})
+        .get("value")
+    )
 
     # Bail if no type comes back.
     if not field_type:
         logger.debug(
-            "Could not get type for %s field %s, skipping." % (
-                summarize_entity["type"],
-                args["field_to_update"],
-            )
+            "Could not get type for %s field %s, skipping."
+            % (summarize_entity["type"], args["field_to_update"],)
         )
         return
 
@@ -402,8 +382,7 @@ def calculate_summaries(sg, logger, event, args):
     )
 
     # Tell the logger all about it.
-    logger.info("Updated %s field on %s with id %s." % (
-        args["field_to_update"],
-        summarize_entity["type"],
-        summarize_entity["id"]),
+    logger.info(
+        "Updated %s field on %s with id %s."
+        % (args["field_to_update"], summarize_entity["type"], summarize_entity["id"]),
     )

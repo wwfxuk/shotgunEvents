@@ -1,6 +1,6 @@
 # init_shot_handles.py
 
-This trigger initializes Smart Cut fields by pre-populating default values for 
+This trigger initializes Smart Cut fields by pre-populating default values for
 the `smart_head_in`, `smart_head_duration`, and `smart_tail_duration` fields.
 
 ## Demo

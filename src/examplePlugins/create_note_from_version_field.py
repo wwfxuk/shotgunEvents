@@ -67,7 +67,7 @@ def is_valid(sg, logger, args):
         # Bail if we're missing any required args.
         try:
             args[name]
-        except Exception, e:
+        except Exception as e:
             logger.warning("Missing arg: %s." % name)
             return
 
@@ -75,32 +75,25 @@ def is_valid(sg, logger, args):
         value_type = type(args[name])
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "%s arg's value is type %s but should be type %s, please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                "%s arg's value is type %s but should be type %s, please fix."
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the arg has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "%s arg's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                "%s arg's value is empty but requires a value, please fix." % (name,)
             )
             return
 
     # Make sure we can read the Version schema.
     try:
         version_schema = sg.schema_field_read("Version")
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" args's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" args\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
@@ -112,24 +105,22 @@ def is_valid(sg, logger, args):
     # Make sure we can read the Version schema.
     try:
         note_schema = sg.schema_field_read("Note")
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" args's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" args\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
-    valid_note_types = note_schema["sg_note_type"]["properties"]["valid_values"]["value"]
+    valid_note_types = note_schema["sg_note_type"]["properties"]["valid_values"][
+        "value"
+    ]
 
     # Make sure content_field is in the entity type's schema.
     if args["sg_note_type"] not in valid_note_types:
         logger.warning(
-            "%s not in Note schema. Valid types are %s, please fix." % (
-                args["sg_note_type"],
-                valid_note_types,
-            )
+            "%s not in Note schema. Valid types are %s, please fix."
+            % (args["sg_note_type"], valid_note_types,)
         )
         return
 
@@ -166,16 +157,16 @@ def version_content_changed(sg, logger, event, args):
     # Return if we can't find our Version.
     if not version:
         logger.info(
-            "Could not find Version with id %s for event %d, skipping." %
-            (entity_id, event["id"])
+            "Could not find Version with id %s for event %d, skipping."
+            % (entity_id, event["id"])
         )
         return
 
     # Return if there is no content to create the Note with.
     if not version[args["content_field"]]:
-        logger.debug("%s field value is empty on Version with id %s, skipping." % (
-            args["content_field"], version["id"]
-            )
+        logger.debug(
+            "%s field value is empty on Version with id %s, skipping."
+            % (args["content_field"], version["id"])
         )
         return
 
@@ -207,11 +198,13 @@ def version_content_changed(sg, logger, event, args):
             entity = sg.find_one(
                 version["entity"]["type"],
                 [["id", "is", version["entity"]["id"]]],
-                ["code"]
+                ["code"],
             )
             data["note_links"] = [entity, version]
             data["subject"] = "%s's Note on %s and %s" % (
-                user_name, version["code"], entity["code"]
+                user_name,
+                version["code"],
+                entity["code"],
             )
         else:
             data["note_links"] = [version]
@@ -220,7 +213,8 @@ def version_content_changed(sg, logger, event, args):
         logger.debug("Result is: %s" % note)
         logger.info("Created Note with id %s." % note["id"])
 
-    except Exception, e:
-        logger.error("Could not create Note from Version with id %s: %s" % (
-            version["id"], str(e))
+    except Exception as e:
+        logger.error(
+            "Could not create Note from Version with id %s: %s"
+            % (version["id"], str(e))
         )

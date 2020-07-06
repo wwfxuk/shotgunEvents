@@ -44,7 +44,8 @@ def registerCallbacks(reg):
         return
 
     event_filter = {
-        "Shotgun_%s_Change" % args["entity_type"]: [
+        "Shotgun_%s_Change"
+        % args["entity_type"]: [
             args["cut_in_field"],
             args["cut_out_field"],
             args["cut_duration_field"],
@@ -52,11 +53,7 @@ def registerCallbacks(reg):
     }
 
     reg.registerCallback(
-        script_name,
-        script_key,
-        update_cut_duration_timecode,
-        event_filter,
-        args,
+        script_name, script_key, update_cut_duration_timecode, event_filter, args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -84,12 +81,10 @@ def is_valid(sg, logger, args):
     # Make sure we can read the entity_type's schema.
     try:
         entity_schema = sg.schema_field_read(args["entity_type"])
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" setting's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" setting\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
@@ -107,11 +102,8 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if value_type not in type_targets["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    type_targets["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, type_targets["type"])
             )
             return
 
@@ -126,22 +118,16 @@ def is_valid(sg, logger, args):
         # Make sure the field exists on the entity.
         if not sg_type:
             logger.warning(
-                "\"%s\" setting refers to a %s entity field (\"%s\") that doesn't exist, please fix." % (
-                    name,
-                    args["entity_type"],
-                    args[name],
-                )
+                '"%s" setting refers to a %s entity field ("%s") that doesn\'t exist, please fix.'
+                % (name, args["entity_type"], args[name],)
             )
             return
 
         # Make sure the field is the correct Shotgun type.
         if sg_type not in type_targets["sg_type"]:
             logger.warning(
-                "\"%s\" setting refers to a Shotgun field that is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    sg_type,
-                    type_targets["sg_type"]
-                )
+                '"%s" setting refers to a Shotgun field that is type "%s" but should be type "%s," please fix.'
+                % (name, sg_type, type_targets["sg_type"])
             )
             return
 
@@ -172,9 +158,8 @@ def update_cut_duration_timecode(sg, logger, event, args):
     """
 
     # Return if we don't have all the field values we need.
-    if (not event.get("attribute_name") or
-        not event.get("meta", {}).get("entity_id")):
-            return
+    if not event.get("attribute_name") or not event.get("meta", {}).get("entity_id"):
+        return
 
     # Make some vars for convenience.
     entity_id = event["meta"]["entity_id"]
@@ -208,11 +193,12 @@ def update_cut_duration_timecode(sg, logger, event, args):
         # ... or enter updated values into new_data for the cut_duration_field
         # and cut_length_rt_field. Round up anything in cut_length_rt_field that
         # isn't an int.
-        new_data[args["cut_duration_field"]] = \
+        new_data[args["cut_duration_field"]] = (
             entity[args["cut_out_field"]] - entity[args["cut_in_field"]] + 1
-        new_data[args["cut_length_rt_field"]] = int(math.ceil(
-            new_data[args["cut_duration_field"]] / args["fps"] * 1000
-        ))
+        )
+        new_data[args["cut_length_rt_field"]] = int(
+            math.ceil(new_data[args["cut_duration_field"]] / args["fps"] * 1000)
+        )
 
     # Otherwise...
     else:
@@ -223,23 +209,23 @@ def update_cut_duration_timecode(sg, logger, event, args):
             return
 
         # ...or enter an updated value into new_data for the cut_length_rt_field field.
-        new_data[args["cut_length_rt_field"]] = int(math.ceil(
-            entity[args["cut_duration_field"]] / args["fps"] * 1000
-        ))
+        new_data[args["cut_length_rt_field"]] = int(
+            math.ceil(entity[args["cut_duration_field"]] / args["fps"] * 1000)
+        )
 
     # If we have something to do, do it!
     if new_data:
 
         sg.update(args["entity_type"], entity["id"], new_data)
 
-        logger.info("Updated %s (ID %s) with %s" % (
-            args["entity_type"],
-            str(entity["id"]),
-            str(new_data))
+        logger.info(
+            "Updated %s (ID %s) with %s"
+            % (args["entity_type"], str(entity["id"]), str(new_data))
         )
 
     # Otherwise tell the logger to bugger off.
     else:
-        logger.info("Did not update %s with ID %s, nothing to do." % (
-            args["entity_type"], entity["id"])
+        logger.info(
+            "Did not update %s with ID %s, nothing to do."
+            % (args["entity_type"], entity["id"])
         )

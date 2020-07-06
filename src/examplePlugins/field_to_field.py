@@ -76,7 +76,7 @@ def is_valid(sg, logger, args):
         # Bail if we're missing any required args.
         try:
             args[name]
-        except Exception, e:
+        except Exception as e:
             logger.warning("Missing arg: %s." % name)
             return
 
@@ -84,32 +84,25 @@ def is_valid(sg, logger, args):
         value_type = type(args[name])
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "%s arg's value is type %s but should be type %s, please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                "%s arg's value is type %s but should be type %s, please fix."
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the arg has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "%s arg's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                "%s arg's value is empty but requires a value, please fix." % (name,)
             )
             return
 
     # Make sure we can read the entity_type's schema.
     try:
         entity_schema = sg.schema_field_read(args["entity_type"])
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" args's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" args\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
@@ -134,7 +127,7 @@ def update_field_value(sg, logger, event, args):
 
     # Return if we don't have all the field values we need; we're intentionally
     # excluding event["meta"]["new_value"] because None is a valid value.
-    if (not event.get("meta", {}).get("entity_id")):
+    if not event.get("meta", {}).get("entity_id"):
         logger.debug("event['meta']['entity_id'] missing, skipping event.")
         return
 
@@ -147,19 +140,16 @@ def update_field_value(sg, logger, event, args):
     if event["meta"]["new_value"] == args["from_value"]:
         try:
             sg.update(
-                entity_type,
-                entity_id,
-                {args["to_field"]: args["to_value"]},
+                entity_type, entity_id, {args["to_field"]: args["to_value"]},
             )
 
             # Tell the logger about it.
-            logger.info("Updated %s with id %s with new %s value %s." % (
-                entity_type,
-                entity_id,
-                args["to_field"],
-                args["to_value"],
-            ))
-        except Exception, e:
-            logger.error("Could not update %s with id %s: %s" % (
-                args["entity_type"], entity_id, e)
+            logger.info(
+                "Updated %s with id %s with new %s value %s."
+                % (entity_type, entity_id, args["to_field"], args["to_value"],)
+            )
+        except Exception as e:
+            logger.error(
+                "Could not update %s with id %s: %s"
+                % (args["entity_type"], entity_id, e)
             )

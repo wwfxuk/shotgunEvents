@@ -1,7 +1,7 @@
 # update_timecode_from_frames.py
 
-This trigger sets `target_tc_field` on an `entity_type` to a timecode value 
-derived by converting frames stored in `source_frames_field` to timecode via the 
+This trigger sets `target_tc_field` on an `entity_type` to a timecode value
+derived by converting frames stored in `source_frames_field` to timecode via the
 `fps` setting.
 
 ## Demo

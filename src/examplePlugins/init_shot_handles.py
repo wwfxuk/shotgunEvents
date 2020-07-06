@@ -33,11 +33,7 @@ def registerCallbacks(reg):
     }
 
     reg.registerCallback(
-        script_name,
-        script_key,
-        init_shot_handles,
-        event_filter,
-        args,
+        script_name, script_key, init_shot_handles, event_filter, args,
     )
 
 
@@ -78,6 +74,10 @@ def init_shot_handles(sg, logger, event, args):
     if updatedata:
         # update the Shot with the new gross
         sg.update("Shot", shot["id"], updatedata)
-        logger.info("%s: shot handles initialized with %s" % (shot.get("code"), str(updatedata)))
+        logger.info(
+            "%s: shot handles initialized with %s" % (shot.get("code"), str(updatedata))
+        )
     else:
-        logger.info("Not updating %s shot handles as values are already set" % shot.get("code"))
+        logger.info(
+            "Not updating %s shot handles as values are already set" % shot.get("code")
+        )

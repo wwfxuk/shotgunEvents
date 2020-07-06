@@ -61,11 +61,7 @@ def registerCallbacks(reg):
     # Register our callback with the Shotgun_%s_Change event and tell the logger
     # about it.
     reg.registerCallback(
-        script_name,
-        script_key,
-        set_datestamp,
-        event_filter,
-        args,
+        script_name, script_key, set_datestamp, event_filter, args,
     )
     reg.logger.debug("Registered callback.")
 
@@ -86,12 +82,9 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type, values=
     # Make sure we can read the schema.
     try:
         entity_schema = sg.schema_field_read(entity_type)
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for entity \"%s\": %s" % (
-                entity_type,
-                e
-            )
+            'Can\'t read Shotgun schema for entity "%s": %s' % (entity_type, e)
         )
         return
 
@@ -102,21 +95,16 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type, values=
     # was found.
     if not sg_type:
         logger.warning(
-            "%s entity field \"%s\" does not exist in Shotgun, please fix." % (
-                entity_type,
-                field_name,
-            )
+            '%s entity field "%s" does not exist in Shotgun, please fix.'
+            % (entity_type, field_name,)
         )
         return
 
     # Make sure the field is the correct Shotgun type.
     if sg_type not in field_type:
         logger.warning(
-            "Shotgun field \"%s\" is type \"%s\" but should be of type(s) \"%s,\" please fix." % (
-                field_name,
-                sg_type,
-                field_type
-            )
+            'Shotgun field "%s" is type "%s" but should be of type(s) "%s," please fix.'
+            % (field_name, sg_type, field_type)
         )
         return
 
@@ -125,12 +113,8 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type, values=
         valid_values = entity_schema[field_name]["properties"]["valid_values"]["value"]
         if value not in valid_values:
             logger.warning(
-                "%s field \"%s\" does not accept value \"%s\", only %s, please fix." % (
-                    entity_type,
-                    field_name,
-                    value,
-                    valid_values,
-                )
+                '%s field "%s" does not accept value "%s", only %s, please fix.'
+                % (entity_type, field_name, value, valid_values,)
             )
             return
 
@@ -156,15 +140,11 @@ def is_valid(sg, logger, args):
                 entity_type,
                 args["status_field"],
                 ["list", "status_list"],
-                values=args["statuses"]
+                values=args["statuses"],
             ):
                 return
         if not check_entity_schema(
-            sg,
-            logger,
-            entity_type,
-            args["date_field"],
-            ["date_time", "date"],
+            sg, logger, entity_type, args["date_field"], ["date_time", "date"],
         ):
             return
 
@@ -183,19 +163,15 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type of type(s) \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type of type(s) "%s," please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
         if checks["allow_empty"] is not False and not args[name]:
             logger.warning(
-                "\"%s\" setting's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                '"%s" setting\'s value is empty but requires a value, please fix.'
+                % (name,)
             )
             return
 
@@ -214,7 +190,11 @@ def set_datestamp(sg, logger, event, args):
     """
 
     # Return if we don't have all the field values we need.
-    if not event or not event.get("meta", {}).get("entity_id") or not event.get("entity", {}).get("type"):
+    if (
+        not event
+        or not event.get("meta", {}).get("entity_id")
+        or not event.get("entity", {}).get("type")
+    ):
         return
 
     # Make some vars for convenience.
@@ -223,50 +203,39 @@ def set_datestamp(sg, logger, event, args):
 
     # Return if we don't have an entity_New event and the event meta new_value
     # doesn't match the status value.
-    if (event["event_type"] != "Shotgun_%s_New" % entity_type and
-        not event["meta"].get("new_value") in args["statuses"]):
-            logger.debug(
-                "Status value \"%s\" doesn't match status \"%s\", skipping." % (
-                    event["meta"].get("new_value"),
-                    args["statuses"]
-                )
-            )
-            return
+    if (
+        event["event_type"] != "Shotgun_%s_New" % entity_type
+        and not event["meta"].get("new_value") in args["statuses"]
+    ):
+        logger.debug(
+            'Status value "%s" doesn\'t match status "%s", skipping.'
+            % (event["meta"].get("new_value"), args["statuses"])
+        )
+        return
 
     # Return if allow_date_overwrite is False and the date is already set.
     if not args["allow_date_overwrite"]:
 
         # Re-query the entity to gather extra field values.
         entity = sg.find_one(
-            entity_type,
-            [["id", "is", entity_id]],
-            [args["date_field"]]
+            entity_type, [["id", "is", entity_id]], [args["date_field"]]
         )
 
         # If the date_field value is not empty, return.
         if entity[args["date_field"]]:
             logger.debug(
-                "Date is already set (%s): %s. Args prevent overwriting existing values, skipping." % (
-                    args["date_field"],
-                    entity[args["date_field"]])
-                )
+                "Date is already set (%s): %s. Args prevent overwriting existing values, skipping."
+                % (args["date_field"], entity[args["date_field"]])
+            )
             return
 
     # Gather the date or timestamp data appropriate for the date field type.
     date_or_timestamp = get_date_or_timestamp(
-        logger,
-        sg,
-        event,
-        entity_type,
-        args["date_field"],
-        args["timezone"],
+        logger, sg, event, entity_type, args["date_field"], args["timezone"],
     )
 
     # Update the date field on our entity.
-    result = sg.update(
-        entity_type,
-        entity_id, {args["date_field"]: date_or_timestamp},
-    )
+    result = sg.update(entity_type, entity_id, {args["date_field"]: date_or_timestamp},)
 
     logger.info("Updated date: %s." % result)
 
@@ -287,10 +256,9 @@ def get_date_or_timestamp(logger, sg, event, entity_type, date_field, timezone):
 
     # Determine the date field type of date_field.
     if date_field and timezone:
-        date_field_type = sg.schema_field_read(
-            entity_type,
-            date_field,
-        )[date_field]["data_type"]["value"]
+        date_field_type = sg.schema_field_read(entity_type, date_field,)[date_field][
+            "data_type"
+        ]["value"]
 
         # Set the date var type based on the field type.
         date_or_timestamp = event["created_at"].astimezone(pytz.timezone(timezone))

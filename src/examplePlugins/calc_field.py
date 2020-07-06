@@ -80,12 +80,9 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
     # Make sure we can read the schema.
     try:
         entity_schema = sg.schema_field_read(entity_type)
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for entity \"%s\": %s" % (
-                entity_type,
-                e
-            )
+            'Can\'t read Shotgun schema for entity "%s": %s' % (entity_type, e)
         )
         return
 
@@ -96,21 +93,16 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
     # was found.
     if not sg_type:
         logger.warning(
-            "%s entity field \"%s\" does not exist in Shotgun, please fix." % (
-                entity_type,
-                field_name,
-            )
+            '%s entity field "%s" does not exist in Shotgun, please fix.'
+            % (entity_type, field_name,)
         )
         return
 
     # Make sure the field is the correct Shotgun type.
     if sg_type not in field_type:
         logger.warning(
-            "Shotgun field \"%s\" is type \"%s\" but should be of type(s) \"%s,\" please fix." % (
-                field_name,
-                sg_type,
-                field_type
-            )
+            'Shotgun field "%s" is type "%s" but should be of type(s) "%s," please fix.'
+            % (field_name, sg_type, field_type)
         )
         return
 
@@ -156,29 +148,25 @@ def is_valid(sg, logger, args):
     operator_types = ["+", "-", "*", "/"]
     if args["operator"] not in operator_types:
         logger.warning(
-            "operator value is \"%s\", but must be of type %s, please fix." % (
-                args["operator"],
-                operator_types,
-            )
+            'operator value is "%s", but must be of type %s, please fix.'
+            % (args["operator"], operator_types,)
         )
         return
 
     # Make sure we can read the entity_type's schema.
     try:
         sg.schema_field_read(args["entity_type"])
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for \"entity_type\" setting's value (\"%s\"): %s" % (
-                args["entity_type"],
-                e
-            )
+            'Can\'t read Shotgun schema for "entity_type" setting\'s value ("%s"): %s'
+            % (args["entity_type"], e)
         )
         return
 
     # Make sure at least one of the field args references a field in Shotgun.
     if type(args["field_a"]) is not str and type(args["field_b"]) is not str:
         logger.warning(
-            "Both \"field_a\" and \"field_b\" are static values; at least one must reference an entity field. Please fix."
+            'Both "field_a" and "field_b" are static values; at least one must reference an entity field. Please fix.'
         )
         return
 
@@ -190,20 +178,16 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the setting has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "\"%s\" setting's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                '"%s" setting\'s value is empty but requires a value, please fix.'
+                % (name,)
             )
             return
 
@@ -222,11 +206,7 @@ def is_valid(sg, logger, args):
 
             # Perform some standard checks on the entity and field.
             if not check_entity_schema(
-                sg,
-                logger,
-                checks["entity"],
-                args[name],
-                checks["sg_type"]
+                sg, logger, checks["entity"], args[name], checks["sg_type"]
             ):
                 return
 
@@ -244,8 +224,9 @@ def update_field_value(sg, logger, event, args):
     """
 
     # Return if we don't have all the field values we need.
-    if not event.get("meta", {}).get("entity_id") and \
-       not event["meta"].get("entity_type"):
+    if not event.get("meta", {}).get("entity_id") and not event["meta"].get(
+        "entity_type"
+    ):
         return
 
     # Make some vars for convenience.
@@ -269,19 +250,13 @@ def update_field_value(sg, logger, event, args):
         num_2 = float(field_b_val)
 
     # Re-query the entity to get updated field values.
-    entity = sg.find_one(
-        entity_type,
-        [["id", "is", entity_id]],
-        fields,
-    )
+    entity = sg.find_one(entity_type, [["id", "is", entity_id]], fields,)
 
     # Bail if the entity no longer exists.
     if not entity:
         logger.debug(
-            "%s entity with id %s no longer exists, skipping..." % (
-                entity_type,
-                entity_id,
-            )
+            "%s entity with id %s no longer exists, skipping..."
+            % (entity_type, entity_id,)
         )
         return
 
@@ -293,7 +268,7 @@ def update_field_value(sg, logger, event, args):
             num_1 = float(entity[field_a_val])
         if not num_2 and entity[field_b_val] is not None:
             num_2 = float(entity[field_b_val])
-    except Exception, e:
+    except Exception as e:
         logger.error("Couldn't use field value, skipping: %s" % str(e))
         return
 
@@ -313,18 +288,23 @@ def update_field_value(sg, logger, event, args):
         result = num_1 * num_2
     elif op == "/":
         if num_2 == 0:
-            logger.error("Value coming from field_b is 0; cannot divide by zero, skipping.")
+            logger.error(
+                "Value coming from field_b is 0; cannot divide by zero, skipping."
+            )
             return
         result = num_1 / num_2
 
     # Grab the Shotgun field data type, if the field exists.
     entity_schema = sg.schema_field_read(entity_type)
-    field_type = entity_schema.get(args["field_to_update"], {}).get("data_type", {}).get("value")
+    field_type = (
+        entity_schema.get(args["field_to_update"], {}).get("data_type", {}).get("value")
+    )
 
     # Bail if no type comes back.
     if not field_type:
         logger.debug(
-            "Could not get type for Shotgun field %s, skipping." % args["field_to_update"]
+            "Could not get type for Shotgun field %s, skipping."
+            % args["field_to_update"]
         )
         return
 
@@ -340,20 +320,14 @@ def update_field_value(sg, logger, event, args):
     # fail with a CRUD error if a result value is not a current list option.
     try:
         sg.update(
-            entity_type,
-            entity_id,
-            {args["field_to_update"]: result},
+            entity_type, entity_id, {args["field_to_update"]: result},
         )
-    except Exception, e:
+    except Exception as e:
         logger.error("Could not update Shotgun, skipping: %s" % str(e))
         return
 
     # Tell the logger all about it.
     logger.info(
-        "Updated %s field on %s entity (id %s) with new value: %s." % (
-            args["field_to_update"],
-            entity_type,
-            entity_id,
-            result,
-        )
+        "Updated %s field on %s entity (id %s) with new value: %s."
+        % (args["field_to_update"], entity_type, entity_id, result,)
     )

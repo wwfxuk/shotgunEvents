@@ -77,12 +77,9 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
     # Make sure we can read the schema.
     try:
         entity_schema = sg.schema_field_read(entity_type)
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for entity \"%s\": %s" % (
-                entity_type,
-                e
-            )
+            'Can\'t read Shotgun schema for entity "%s": %s' % (entity_type, e)
         )
         return
 
@@ -93,21 +90,16 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_type):
     # was found.
     if not sg_type:
         logger.warning(
-            "%s entity field \"%s\" does not exist in Shotgun, please fix." % (
-                entity_type,
-                field_name,
-            )
+            '%s entity field "%s" does not exist in Shotgun, please fix.'
+            % (entity_type, field_name,)
         )
         return
 
     # Make sure the field is the correct Shotgun type.
     if sg_type not in field_type:
         logger.warning(
-            "Shotgun field \"%s\" is type \"%s\" but should be of type(s) \"%s,\" please fix." % (
-                field_name,
-                sg_type,
-                field_type
-            )
+            'Shotgun field "%s" is type "%s" but should be of type(s) "%s," please fix.'
+            % (field_name, sg_type, field_type)
         )
         return
 
@@ -173,14 +165,8 @@ def is_valid(sg, logger, args):
             "entity": "Version",
             "sg_type": "number",
         },
-        "default_head_in": {
-            "type": [int],
-            "allow_empty": False,
-        },
-        "default_tail_out": {
-            "type": [int],
-            "allow_empty": False,
-        },
+        "default_head_in": {"type": [int], "allow_empty": False,},
+        "default_tail_out": {"type": [int], "allow_empty": False,},
     }
 
     for name, checks in args_to_check.iteritems():
@@ -191,20 +177,16 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" setting's value is type \"%s\" but should be type \"%s,\" please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" setting\'s value is type "%s" but should be type "%s," please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the setting has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and args[name] is None:
             logger.warning(
-                "\"%s\" setting's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                '"%s" setting\'s value is empty but requires a value, please fix.'
+                % (name,)
             )
             return
 
@@ -218,11 +200,7 @@ def is_valid(sg, logger, args):
 
             # Perform some standard checks on the entity and field.
             if not check_entity_schema(
-                sg,
-                logger,
-                checks["entity"],
-                args[name],
-                checks["sg_type"]
+                sg, logger, checks["entity"], args[name], checks["sg_type"]
             ):
                 return
 
@@ -271,7 +249,8 @@ def update_version_cut_values(sg, logger, event, args):
             args["frame_count_field"],
             args["cut_length_field"],
             args["last_frame_field"],
-        ] + args["trigger_fields"],
+        ]
+        + args["trigger_fields"],
     )
 
     # Return if the Version isn't found.
@@ -293,41 +272,57 @@ def update_version_cut_values(sg, logger, event, args):
             version[args["cut_length_field"]],
         ]
         if field_values_valid(required_fields):
-            update_data[args["last_frame_field"]] = version[args["first_frame_field"]] + \
-                version[args["frame_count_field"]] - 1
-            update_data[args["cut_in_field"]] = version[args["first_frame_field"]] + \
-                (version[args["head_duration_field"]] or args["default_head_in"])
-            update_data[args["cut_out_field"]] = update_data[args["cut_in_field"]] + \
-                version[args["cut_length_field"]] - 1
+            update_data[args["last_frame_field"]] = (
+                version[args["first_frame_field"]]
+                + version[args["frame_count_field"]]
+                - 1
+            )
+            update_data[args["cut_in_field"]] = version[args["first_frame_field"]] + (
+                version[args["head_duration_field"]] or args["default_head_in"]
+            )
+            update_data[args["cut_out_field"]] = (
+                update_data[args["cut_in_field"]]
+                + version[args["cut_length_field"]]
+                - 1
+            )
 
     # Part 2
     elif event["attribute_name"] in [args["cut_in_field"], args["cut_out_field"]]:
-        required_fields = [version[args["cut_out_field"]],
-                           version[args["cut_in_field"]],
-                           version[args["first_frame_field"]],
-                           version[args["last_frame_field"]]]
+        required_fields = [
+            version[args["cut_out_field"]],
+            version[args["cut_in_field"]],
+            version[args["first_frame_field"]],
+            version[args["last_frame_field"]],
+        ]
         if field_values_valid(required_fields):
-            update_data[args["cut_length_field"]] = version[args["cut_out_field"]] - \
-                version[args["cut_in_field"]] + 1
-            update_data[args["head_duration_field"]] = version[args["cut_in_field"]] - \
-                version[args["first_frame_field"]]
-            update_data[args["tail_duration_field"]] = version[args["last_frame_field"]] - \
-                version[args["cut_out_field"]]
+            update_data[args["cut_length_field"]] = (
+                version[args["cut_out_field"]] - version[args["cut_in_field"]] + 1
+            )
+            update_data[args["head_duration_field"]] = (
+                version[args["cut_in_field"]] - version[args["first_frame_field"]]
+            )
+            update_data[args["tail_duration_field"]] = (
+                version[args["last_frame_field"]] - version[args["cut_out_field"]]
+            )
 
     # Part 3
     else:
-        required_fields = [version[args["cut_in_field"]],
-                           version[args["cut_out_field"]],
-                           version[args["cut_length_field"]]]
+        required_fields = [
+            version[args["cut_in_field"]],
+            version[args["cut_out_field"]],
+            version[args["cut_length_field"]],
+        ]
         if field_values_valid(required_fields):
-            update_data[args["first_frame_field"]] = version[args["cut_in_field"]] - \
-                (version[args["head_duration_field"]] or args["default_head_in"])
-            update_data[args["last_frame_field"]] = version[args["cut_out_field"]] + \
-                (version[args["tail_duration_field"]] or args["default_tail_out"])
+            update_data[args["first_frame_field"]] = version[args["cut_in_field"]] - (
+                version[args["head_duration_field"]] or args["default_head_in"]
+            )
+            update_data[args["last_frame_field"]] = version[args["cut_out_field"]] + (
+                version[args["tail_duration_field"]] or args["default_tail_out"]
+            )
             update_data[args["frame_count_field"]] = (
-                version[args["head_duration_field"]]
-                or args["default_head_in"]) + version[args["cut_length_field"]] + (version[args["tail_duration_field"]]
-                or args["default_tail_out"]
+                (version[args["head_duration_field"]] or args["default_head_in"])
+                + version[args["cut_length_field"]]
+                + (version[args["tail_duration_field"]] or args["default_tail_out"])
             )
 
     if update_data:

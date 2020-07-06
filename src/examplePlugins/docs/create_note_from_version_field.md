@@ -1,6 +1,6 @@
 # create_note_from_version_field.py
 
-When a HumanUser or Script updates a Version's `content_field` field value, 
+When a HumanUser or Script updates a Version's `content_field` field value,
 create a Note based on the value in that field.
 
 ## Demo

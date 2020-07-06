@@ -72,7 +72,7 @@ def is_valid(sg, logger, args):
             "allow_empty": False,
             "entity": "TaskTemplate",
             "sg_type": ["list", "entity_type"],
-            "required_values": ["N/A", args["plugins_field_value"]]
+            "required_values": ["N/A", args["plugins_field_value"]],
         },
         "plugins_field_value": {"type": [str], "allow_empty": False},
         "trash_old_tasks": {"type": [bool], "allow_empty": False},
@@ -95,20 +95,16 @@ def is_valid(sg, logger, args):
         # Make sure the setting value is the correct Python type.
         if checks.get("type") and value_type not in checks["type"]:
             logger.warning(
-                "\"%s\" setting's value is %s but should be %s, please fix." % (
-                    name,
-                    value_type,
-                    checks["type"]
-                )
+                '"%s" setting\'s value is %s but should be %s, please fix.'
+                % (name, value_type, checks["type"])
             )
             return
 
         # Make sure the setting has a non-empty value if allow_empty is False.
         if checks.get("allow_empty") is False and not args[name]:
             logger.warning(
-                "\"%s\" setting's value is empty but requires a value, please fix." % (
-                    name,
-                )
+                '"%s" setting\'s value is empty but requires a value, please fix.'
+                % (name,)
             )
             return
 
@@ -136,7 +132,9 @@ def is_valid(sg, logger, args):
     project_ids = [i["id"] for i in projects]
     for project_id in args["project_ids"]:
         if project_id not in project_ids:
-            logger.warning("Project with id %s does not exist, please fix." % project_id)
+            logger.warning(
+                "Project with id %s does not exist, please fix." % project_id
+            )
             return
 
     # Make sure the fields the user wants to exclude exist.
@@ -151,13 +149,17 @@ def is_valid(sg, logger, args):
         try:
             sg.schema_field_read(entity_type)
         except:
-            logger.warning("Could not read schema for entity type %s, please fix." % entity_type)
+            logger.warning(
+                "Could not read schema for entity type %s, please fix." % entity_type
+            )
             return
 
     return True
 
 
-def check_entity_schema(sg, logger, entity_type, field_name, field_types, required_values):
+def check_entity_schema(
+    sg, logger, entity_type, field_name, field_types, required_values
+):
     """
     Verifies that field_name of field_type exists in entity_type's schema.
 
@@ -172,12 +174,9 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_types, requir
     # Make sure we can read the schema.
     try:
         entity_schema = sg.schema_field_read(entity_type)
-    except Exception, e:
+    except Exception as e:
         logger.warning(
-            "Can't read Shotgun schema for entity \"%s\": %s" % (
-                entity_type,
-                e
-            )
+            'Can\'t read Shotgun schema for entity "%s": %s' % (entity_type, e)
         )
         return
 
@@ -188,43 +187,36 @@ def check_entity_schema(sg, logger, entity_type, field_name, field_types, requir
     # was found.
     if not sg_type:
         logger.warning(
-            "%s entity %s field \"%s\" does not exist in Shotgun, please fix." % (
-                entity_type,
-                field_types,
-                field_name,
-            )
+            '%s entity %s field "%s" does not exist in Shotgun, please fix.'
+            % (entity_type, field_types, field_name,)
         )
         return
 
     # Make sure the field is the correct Shotgun type.
     if sg_type not in field_types:
         logger.warning(
-            "Shotgun field \"%s\" is type \"%s\" but should be of type(s) \"%s,\" please fix." % (
-                field_name,
-                sg_type,
-                field_types,
-            )
+            'Shotgun field "%s" is type "%s" but should be of type(s) "%s," please fix.'
+            % (field_name, sg_type, field_types,)
         )
         return
 
     # If we have a list or status_list Shotgun field, make sure any required
     # values exist.
     if sg_type == "list" or sg_type == "status_list":
-        schema_list_values = entity_schema.get(
-            field_name, {}).get(
-                "properties", {}).get(
-                    "valid_values", {}).get(
-                        "value", [])
+        schema_list_values = (
+            entity_schema.get(field_name, {})
+            .get("properties", {})
+            .get("valid_values", {})
+            .get("value", [])
+        )
         missing_values = []
         for value in required_values:
             if value not in schema_list_values:
                 missing_values.append(value)
         if missing_values:
             logger.warning(
-                "Shotgun field \"%s\" does not contain required value(s) \"%s\", please fix." % (
-                    field_name,
-                    missing_values,
-                )
+                'Shotgun field "%s" does not contain required value(s) "%s", please fix.'
+                % (field_name, missing_values,)
             )
             return
 
@@ -248,10 +240,7 @@ def update_entities(sg, logger, event, args):
         return
 
     # Re-query our Task Template.
-    task_template = sg.find_one(
-        "TaskTemplate",
-        [["id", "is", event["entity"]["id"]]],
-    )
+    task_template = sg.find_one("TaskTemplate", [["id", "is", event["entity"]["id"]]],)
 
     # Bail if we don't have a Task Template.
     if not task_template:
@@ -273,9 +262,7 @@ def update_entities(sg, logger, event, args):
 
     # Grab all the Tasks in the template.
     template_tasks = sg.find(
-        "Task",
-        [["task_template", "is", task_template]],
-        task_schema.keys(),
+        "Task", [["task_template", "is", task_template]], task_schema.keys(),
     )
 
     # Grab Project records based on project_ids args.
@@ -301,10 +288,7 @@ def update_entities(sg, logger, event, args):
         # Grab all entities attached to the Task Template in relevant Projects.
         entities = sg.find(
             entity_type,
-            [
-                ["task_template", "is", task_template],
-                ["project", "in", projects],
-            ],
+            [["task_template", "is", task_template], ["project", "in", projects],],
             ["project"],
         )
 
@@ -352,7 +336,11 @@ def update_entities(sg, logger, event, args):
                             write_value = False
                             if not value:
                                 write_value = True
-                            elif value and args["overwrite_field_values"] and field not in args["exclude_fields"]:
+                            elif (
+                                value
+                                and args["overwrite_field_values"]
+                                and field not in args["exclude_fields"]
+                            ):
                                 write_value = True
                             if not write_value:
                                 continue
@@ -420,17 +408,11 @@ def update_entities(sg, logger, event, args):
                 # If the Task doesn't exist on the entity, add it.
                 if not assigned_to_entity:
                     batch_data.append(
-                        {
-                            "request_type": "create",
-                            "entity_type": "Task",
-                            "data": data,
-                        }
+                        {"request_type": "create", "entity_type": "Task", "data": data,}
                     )
                     logger.info(
-                        "Will create %s Task on entity with id %s." % (
-                            template_task["content"],
-                            entity["id"],
-                        )
+                        "Will create %s Task on entity with id %s."
+                        % (template_task["content"], entity["id"],)
                     )
 
     # And now the scary part.
